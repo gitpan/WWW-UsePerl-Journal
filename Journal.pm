@@ -41,7 +41,7 @@ my %postdefaults = (
 );
 
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 =head2 new
 
@@ -58,7 +58,7 @@ sub new {
     my $ua = LWP::UserAgent->new(env_proxy => 1);
     $ua->cookie_jar(HTTP::Cookies->new());
     my $self  = bless { 
-        user => $user,
+        ($user =~ /^\d+$/ ? '_uid' : '_user') => $user,
         ua => $ua,
         }, $class;
     return $self;
@@ -70,7 +70,19 @@ Returns the username
 
 =cut
 
-sub user { shift->{user} }
+sub user {
+    my $self = shift;
+    $self->{_user} ||= do {
+        my $uid = $self->uid;
+
+        my $content = $self->{ua}->request(GET UP_URL .  "/journal.pl?op=list&uid=$uid")->content;
+        die "Cannot connect to " . UP_URL unless $content;
+
+        $content =~ m#<HTML><HEAD><TITLE>(.*?)'s Journal</TITLE>#
+          or die "$uid does not exist";
+        $1;
+    }
+}
 
 =head2 uid
 
@@ -112,7 +124,8 @@ sub entryhash {
         my %entries;
         foreach my $line (@lines){
             next unless $line =~ m#~$user/journal/#ism;
-            $line =~ m#~$user/journal/(\d*)/"><b>(.*?)</b></a>#ism;
+            $line =~ m#~$user/journal/(\d+)"><b>(.*?)</b></a>#ism;
+
             next unless defined $1;
             $entries{$1} = $2;
         }

@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl -w
 
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 9;
 
 use_ok('WWW::UsePerl::Journal');
 
@@ -30,3 +30,7 @@ my $text = $j->entrytitled("Lingua::Pangram");
 is($text,
 "I read in <A HREF=\"~hfb/journal/\">hfb's journal</A> that there was no module for testing whether something was a pangram. There is now.",
 "entrytitled");
+
+my $k = new WWW::UsePerl::Journal 1662;
+is($k->user, 'richardc', "username from uid");
+
