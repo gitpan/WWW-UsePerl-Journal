@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl -w
 
 use strict;
-use Test::More tests => 9;
+use Test::More tests => 11;
 
 use_ok('WWW::UsePerl::Journal');
 
@@ -33,3 +33,8 @@ cmp_ok("$text", 'eq',
 
 my $k = new WWW::UsePerl::Journal 1662;
 cmp_ok($k->user, 'eq', 'richardc', "username from uid");
+
+$j = WWW::UsePerl::Journal->new('2shortplanks');
+%entries = eval { $j->entryhash; };
+is($@, "", "entryhash doesn't die on titles with trailing newlines");
+isnt(scalar %entries, 0, "...and has found some entries");

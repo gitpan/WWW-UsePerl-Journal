@@ -145,6 +145,7 @@ sub get_content
       (\d+):(\d+) \s+ ([AP]M)
     !smx;
     $hr += 12 if ($amp eq 'PM');
+    $hr = 0 if $hr == 24;
 
     $self->{date} = Time::Piece->strptime(
    "$month $day $year ${hr}:$mi",

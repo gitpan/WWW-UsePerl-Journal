@@ -44,7 +44,7 @@ my %postdefaults = (
 );
 
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head2 new
 
@@ -196,29 +196,16 @@ sub entryhash {
         my $content = $self->{ua}->request(
             GET UP_URL . "/journal.pl?op=list&uid=$UID")->content;
         die "could not create entry list" unless $content;
-        my @lines = split /\n/, $content;
 
         my %entries;
-#        foreach my $line (@lines){
-#            next unless $line =~ m#~$user/journal/#ism;
-#            $line =~ m#~$user/journal/(\d+)"><b>(.*?)</b></a>#ism;
 
-        while (@lines)
-        {
-        my $line = shift @lines;
-             next unless $line =~ m#~$user/journal/\d+"#ism;
-        $line .= shift @lines;
-             $line =~ m!
+        while ( $content =~ m#
         ~$user/journal/(\d+)"><b>(.*?)</b></a></td>
         [\s\r\n]*
         <[^<]+><em>
         ([^<]+)
         </em></[^<]+>
-        !xism;
-        unless (defined $1)
-        {
-            die "Could not match against line:\n[$line]\n";
-        }
+        #migxs ) {
         my $time = Time::Piece->strptime($3, '%Y.%m.%d %H:%M');
         #$time += 4*ONE_HOUR; # correct TZ?
 
