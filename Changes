@@ -1,5 +1,11 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.11  Fri Jan 24 15:11:53 GMT 2003
+    - Fix for change in the title HTML
+	- Date code is still broken - it is out by the timezone of the user
+	  who wrote the entry, this may not be fixable if we cannot
+	  determine that user's timezone.
+
 0.10  Mon Oct 14 10:51:25 BST 2002
     - Patch from Kate L Pugh fixes noon - 1pm bug and newline title bug
 

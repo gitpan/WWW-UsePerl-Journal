@@ -44,7 +44,7 @@ my %postdefaults = (
 );
 
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head2 new
 
@@ -58,14 +58,14 @@ Creates an instance for the specified user.
 sub new {
     my $class = shift;
     my $user  = shift or die "We need a user!";
-    my $ua = LWP::UserAgent->new(env_proxy => 1);
+    my $ua    = LWP::UserAgent->new(env_proxy => 1);
     $ua->cookie_jar(HTTP::Cookies->new());
     my $self  = bless { 
         ($user =~ /^\d+$/ ? '_uid' : '_user') => $user,
         ua => $ua,
         }, $class;
     return $self;
-}#new
+}
 
 =head2 user
 
@@ -78,10 +78,11 @@ sub user {
     $self->{_user} ||= do {
         my $uid = $self->uid;
 
-        my $content = $self->{ua}->request(GET UP_URL .  "/journal.pl?op=list&uid=$uid")->content;
+        my $content = $self->{ua}->request(GET UP_URL .
+            "/journal.pl?op=list&uid=$uid")->content;
         die "Cannot connect to " . UP_URL unless $content;
 
-        $content =~ m#<HTML><HEAD><TITLE>(.*?)'s Journal</TITLE>#
+        $content =~ m#<HTML><HEAD><TITLE>Journal of (.*?) \(\d+\)</TITLE>#
           or die "$uid does not exist";
         $1;
     }
@@ -102,10 +103,10 @@ sub uid {
         die "Cannot connect to " . UP_URL unless $content;
 
         $content =~ m#$user \((\d+)\)#ism
-          or die "$user does not exist";
+            or die "$user does not exist";
         $1;
     }
-}#getUID
+}
 
 =head2 recentarray
 
@@ -113,73 +114,77 @@ Returns an array of the 30 most recently posted WWW::UsePerl::Journal::Entry obj
 
 =cut
 
-sub recentarray
-{
+sub recentarray {
     my $self = shift;
     $self->{_recentarray} ||= do
     {
-	my $content = $self->_journalsearch_content;
-	die "Could not create search list - check your Internet connection" unless $content;
+    my $content = $self->_journalsearch_content;
+    die "Could not create search list - check your Internet connection" 
+	    unless $content;
 
-	my @entries;
+    my @entries;
 
 # Sample of this on 04/10/2002
 #<B><A HREF="//use.perl.org/~davorg/journal/8165">Buy More Books</A></B><BR>
-#	<FONT SIZE="-1">On 2002.10.04  6:24</FONT><BR>
-#	Yesterday I got my royalty statement for sales of Data Munging with Perl in the...<BR>
-#	<FONT SIZE="-1">
-#	Author: <A HREF="//use.perl.org/~davorg/">davorg</A>
+#    <FONT SIZE="-1">On 2002.10.04  6:24</FONT><BR>
+#    Yesterday I got my royalty statement for sales of Data Munging with Perl in the...<BR>
+#    <FONT SIZE="-1">
+#    Author: <A HREF="//use.perl.org/~davorg/">davorg</A>
 #
-#	</FONT>
-#	<P>
+#    </FONT>
+#    <P>
 
     while ( $content =~ m#
-   <B><A\s*HREF="$site/~(\w+)/journal/(\d+)">(.+?)</A></B><BR>
-   \s*
-   <FONT\s*SIZE="-1">On\s*(.+?)</FONT><BR>
-   \s*
-   .+?<BR>
-   \s*
-   <FONT\s*SIZE="-1">
-   \s*
-   Author:\s*<A\s*HREF="$site/~(\w+)/">(\w+)</A>
-   \s*
-   </FONT>
-   \s*
-   <P>
-	#migxs )
-	{
-	    die "$5 is not $6" if $5 ne $6;
+        <B><A\s*HREF="$site/~(\w+)/journal/(\d+)">(.+?)</A></B><BR>
+        \s*
+        <FONT\s*SIZE="-1">On\s*(.+?)</FONT><BR>
+        \s*
+        .+?<BR>
+        \s*
+        <FONT\s*SIZE="-1">
+        \s*
+        Author:\s*<A\s*HREF="$site/~(\w+)/">(\w+)</A>
+        \s*
+        </FONT>
+        \s*
+        <P>
+    #migxs ) {
+        die "$5 is not $6" if $5 ne $6;
         my $time = Time::Piece->strptime($4, '%Y.%m.%d %H:%M');
         #$time += 4*ONE_HOUR; # correct TZ?
 
-	    push @entries, WWW::UsePerl::Journal::Entry->new(
-		j	=> $self,
-		user	=> $1,
-		id	=> $2,
-		subject	=> $3,
-		date	=> $time,
-	    );
-	}
-
-	return @entries;
+        push @entries, WWW::UsePerl::Journal::Entry->new(
+            j       => $self,
+            user    => $1,
+            id      => $2,
+            subject => $3,
+            date    => $time,
+        );
     }
-}#recentarray
+
+    return @entries;
+    }
+}
 
 # Internal method: _journalsearch_content
 # Returns a string containing the interesting bit of the journal search page.
 # Split out from recentarray method to make consistency testing easier.
 sub _journalsearch_content {
-	my $self = shift;
-	my $content = $self->{ua}->request(
-	    GET UP_URL . "/search.pl?op=journals"
-	)->content;
+    my $self = shift;
+    my $content = $self->{ua}->request(
+        GET UP_URL . "/search.pl?op=journals")->content;
 
-	$content =~ s/^.*\Q<!-- start template: ID 251, journalsearch;search;default -->\E//sm;
-	$content =~ s/<A HREF=\"$site\/search\.pl\?threshold=0&op=journals&sort=1&amp;start=30">Next 30 matches&gt;<\/A>\s*<P>\s*<!-- end template: ID 251, journalsearch;search;default -->.*$//sm;
+    $content =~ 
+        s/^.*\Q<!-- start template: ID 251,
+        journalsearch;search;default -->\E//sm;
+    $content =~ 
+        s/<A HREF=\"$site\/search\.pl\?threshold=0&op=journals
+		&sort=1&amp;start=30">Next 30 matches&gt;
+		<\/A>\s*<P>\s*
+		<!-- end template: ID 251, journalsearch;search;default -->.*$//sm;
 
-	return $content;
-}#_journalsearch_content
+    return $content;
+}
 
 =head2 entryhash
 
@@ -200,28 +205,28 @@ sub entryhash {
         my %entries;
 
         while ( $content =~ m#
-        ~$user/journal/(\d+)"><b>(.*?)</b></a></td>
-        [\s\r\n]*
-        <[^<]+><em>
-        ([^<]+)
-        </em></[^<]+>
+            ~$user/journal/(\d+)"><b>(.*?)</b></a></td>
+            [\s\r\n]*
+            <[^<]+><em>
+            ([^<]+)
+            </em></[^<]+>
         #migxs ) {
-        my $time = Time::Piece->strptime($3, '%Y.%m.%d %H:%M');
-        #$time += 4*ONE_HOUR; # correct TZ?
+            my $time = Time::Piece->strptime($3, '%Y.%m.%d %H:%M');
+            #$time += 4*ONE_HOUR; # correct TZ?
 
             next unless defined $1;
-	    $entries{$1} = WWW::UsePerl::Journal::Entry->new(
-		j	=> $self,
-		user	=> $user,
-		id	=> $1,
-		subject	=> $2,
-        date => $time,
-	    );
+            $entries{$1} = WWW::UsePerl::Journal::Entry->new(
+                j       => $self,
+                user    => $user,
+                id      => $1,
+                subject => $2,
+                date    => $time,
+            );
         }
 
     return %entries;
     }
-}#entryhash
+}
 
 =head2 entryids
 
@@ -236,11 +241,11 @@ sub entryids {
         my @IDs;
 
         foreach (sort keys %entries) {
-	    $IDs[$#IDs+1] = $_;
+            $IDs[$#IDs+1] = $_;
         }
         return @IDs;
     }
-}#entryids
+}
 
 =head2 entrytitles
 
@@ -259,7 +264,7 @@ sub entrytitles {
         }
         return @titles;
     }
-}#entrytitles
+}
 
 =head2 entry
 
@@ -271,11 +276,11 @@ sub entry {
     my $self = shift;
     my $ID = shift;
     my $entry = WWW::UsePerl::Journal::Entry->new(
-	j	=> $self,
-	id	=> $ID,
+        j     => $self,
+        id    => $ID,
     );
     return $entry;
-}#entry
+}
 
 =head2 entrytitled
 
@@ -292,7 +297,7 @@ sub entrytitled {
         return $self->entry($_);
     }
     die "$title does not exist";
-}#entrytitled
+}
 
 =head2 login
 
@@ -300,8 +305,7 @@ Required before posting can occur, takes the password
 
 =cut
 
-sub login
-{
+sub login {
     my ($self, $passwd) = (@_);
     my $user = $self->user;
     my $login =
@@ -320,59 +324,54 @@ $j-E<gt>postentry({title =E<gt> "My journal is great", text =E<gt> "It really is
 
 =cut
 
-sub postentry
-{
+sub postentry {
     my $self = shift;
     my %params = (@_);
     # Validate parameters
-    for (qw/text title/)
-    {
-	return undef unless exists $params{$_}
+    for (qw/text title/) {
+        return undef unless exists $params{$_}
     }
     %params = (%postdefaults, %params);
     $params{comments} = $params{comments} ? 1 : 0;
-    if ($params{type} !~ /^[1-4]$/)
-    {
-	die "Invalid post type.\n";
-	carp "Invalid post type.\n";
-	return undef;
+    if ($params{type} !~ /^[1-4]$/) {
+        die "Invalid post type.\n";
+        carp "Invalid post type.\n";
+        return undef;
     }
-    if ($params{topic} !~ /^\d+$/)
-    {
-	die "Invalid journal topic.\n";
-	carp "Invalid journal topic.\n";
-	return undef;
+    if ($params{topic} !~ /^\d+$/) {
+        die "Invalid journal topic.\n";
+        carp "Invalid journal topic.\n";
+        return undef;
     }
-    if (length($params{title}) > 60)
-    {
-	die "Subject too long.\n";
-	carp "Subject too long.\n";
-	return undef;
+    if (length($params{title}) > 60) {
+        die "Subject too long.\n";
+        carp "Subject too long.\n";
+        return undef;
     }
     # Post posting
     my $editwindow =
-    $self->{ua}->request(
-	GET 'http://use.perl.org/journal.pl?op=edit')->content;
-	die "don't have an editwindow" unless $editwindow;
-	my ($formkey) = ($editwindow =~ m/formkey"\s+VALUE="([^"]+)"/ism);
-	die "No formkey!" unless defined $formkey;
-	croak "No formkey!" unless defined $formkey;
-	my %data = (
-	    id  => '',
-	    state   => 'editing',
-	    preview => 'active',
-	    formkey => $formkey,
-	    description => $params{title},
-	    tid => $params{topic},
-	    journal_discuss => $params{comments},
-	    article => $params{text},
-	    posttype    => $params{type},
-	    op  => 'save',
-	);
-	my $post = $self->{ua}->request(
-	    POST 'http://use.perl.org/journal.pl', \%data);
-	    return $post->is_success;
-	}#postEntry
+        $self->{ua}->request(
+        GET 'http://use.perl.org/journal.pl?op=edit')->content;
+    die "don't have an editwindow" unless $editwindow;
+    my ($formkey) = ($editwindow =~ m/formkey"\s+VALUE="([^"]+)"/ism);
+    die "No formkey!" unless defined $formkey;
+    croak "No formkey!" unless defined $formkey;
+    my %data = (
+        id              => '',
+        state           => 'editing',
+        preview         => 'active',
+        formkey         => $formkey,
+        description     => $params{title},
+        tid             => $params{topic},
+        journal_discuss => $params{comments},
+        article         => $params{text},
+        posttype        => $params{type},
+        op              => 'save',
+    );
+    my $post = $self->{ua}->request(
+        POST 'http://use.perl.org/journal.pl', \%data);
+        return $post->is_success;
+}
 
 1;
 __END__
@@ -407,6 +406,9 @@ Writing activities (modify, delete ...)
 Beware the stringification of WWW::UsePerl::Journal::Entry objects. 
 They're still objects, they just happen to look the same as before when
 you're printing them. Use -E<gt>content instead.
+
+The time on a journal entry is the localtime of the user that created the 
+journal entry. If you aren't in the same timezone, that time will be wrong.
 
 =head1 LICENSE
 
