@@ -43,7 +43,7 @@ my %postdefaults = (
 );
 
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 =head2 new
 
@@ -100,7 +100,7 @@ sub uid {
         my $content = $self->{ua}->request(GET UP_URL . "/~$user/")->content;
         die "Cannot connect to " . UP_URL unless $content;
 
-        $content =~ m#User info for $user \((\d+)\)#ism
+        $content =~ m#$user \((\d+)\)#ism
           or die "$user does not exist";
         $1;
     }
@@ -358,7 +358,8 @@ F<http://russell.matbouli.org/>
 
 =head1 CONTRIBUTORS
 
-Thanks to both Iain Truskett and Richard Clampe for sending patches
+Thanks to Iain Truskett, Richard Clampe, Simon Wilcox and Simon Wistow 
+for sending patches.
 
 =head1 TODO
 

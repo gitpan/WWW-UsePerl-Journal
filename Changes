@@ -1,5 +1,10 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.06  Thu Sep 26 10:46:16 BST 2002
+    - Internal change to use.perl.org broke things
+    - Thanks to Simon Wilcox and Simon Wistow for both reporting it on
+      the same day (which confused me ...).
+
 0.05  Sun Mar  3 20:14:29 GMT 2002
     - Fixes
     - Interface had changed due to the introduction of the Entry class
