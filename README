@@ -1,0 +1,33 @@
+SYNOPSIS
+      use WWW::UsePerl::Journal;
+      my $journal = WWW::UsePerl::Journal->new()
+      print $journal->getEntryByTitle("russell", "Text::Echelon");
+      my @entries = $journal->getEntryTitles("russell");
+
+DESCRIPTION
+    Lists journal entries for a user. Can display a specific journal entry.
+
+AVAILABILITY
+    It should be available for download from
+    http://russell.matbouli.org/code/www-useperl-journal/ or from CPAN
+
+AUTHOR
+    Russell Matbouli <www-useperl-journal-spam@russell.matbouli.org>
+
+    http://russell.matbouli.org/
+
+TODO
+    Optimise via caching - this will be in the next proper release I hope.
+
+    Better error checking.
+
+    Comment retrieval
+
+    Writing activities (comments, create entry, modify, delete ...)
+
+LICENSE
+    Distributed under GPL v2. See COPYING included with this distibution.
+
+SEE ALSO
+    http://use.perl.org/
+

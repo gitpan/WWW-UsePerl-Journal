@@ -1,0 +1,7 @@
+Changes
+COPYING
+MANIFEST
+Makefile.PL
+Journal.pm
+README
+t/01test.t
