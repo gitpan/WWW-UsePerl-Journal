@@ -30,6 +30,7 @@ use HTTP::Cookies;
 use HTTP::Request::Common;
 use Data::Dumper;
 use Carp;
+use Time::Piece;
 use WWW::UsePerl::Journal::Entry;
 
 
@@ -43,7 +44,7 @@ my %postdefaults = (
 );
 
 
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 =head2 new
 
@@ -140,13 +141,15 @@ sub recentarray
 	    die "$1 is not $4" if $1 ne $4;
 	    die "$1 is not $5" if $1 ne $5;
 	    die "$4 is not $5" if $4 ne $5;
+        my $time = Time::Piece->strptime($6, '%Y.%m.%d%n%H:%M');
+        #$time += 4*ONE_HOUR; # correct TZ?
 
 	    push @entries, WWW::UsePerl::Journal::Entry->new(
 		j	=> $self,
 		user	=> $1,
 		id	=> $2,
 		subject	=> $3,
-		date	=> $6
+		date	=> $time,
 	    );
 
 	    #warn "Posting by $1 on $6 [ $3 ] ($2)\n";
@@ -174,9 +177,28 @@ sub entryhash {
         my @lines = split /\n/, $content;
 
         my %entries;
-        foreach my $line (@lines){
-            next unless $line =~ m#~$user/journal/#ism;
-            $line =~ m#~$user/journal/(\d+)"><b>(.*?)</b></a>#ism;
+#        foreach my $line (@lines){
+#            next unless $line =~ m#~$user/journal/#ism;
+#            $line =~ m#~$user/journal/(\d+)"><b>(.*?)</b></a>#ism;
+
+        while (@lines)
+        {
+        my $line = shift @lines;
+             next unless $line =~ m#~$user/journal/\d+"#ism;
+        $line .= shift @lines;
+             $line =~ m!
+        ~$user/journal/(\d+)"><b>(.*?)</b></a></td>
+        [\s\r\n]*
+        <[^<]+><em>
+        ([^<]+)
+        </em></[^<]+>
+        !xism;
+        unless (defined $1)
+        {
+            die "Could not match against line:\n[$line]\n";
+        }
+        my $time = Time::Piece->strptime($3, '%Y.%m.%d%n%H:%M');
+        #$time += 4*ONE_HOUR; # correct TZ?
 
             next unless defined $1;
 	    $entries{$1} = WWW::UsePerl::Journal::Entry->new(
@@ -184,6 +206,7 @@ sub entryhash {
 		user	=> $user,
 		id	=> $1,
 		subject	=> $2,
+        date => $time,
 	    );
         }
 

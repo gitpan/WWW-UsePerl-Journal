@@ -6,3 +6,4 @@ lib/WWW/UsePerl/Journal.pm
 lib/WWW/UsePerl/Journal/Entry.pm
 t/01test.t
 t/02search.t
+t/03date.t

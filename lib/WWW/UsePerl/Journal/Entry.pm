@@ -14,9 +14,11 @@ use HTTP::Cookies;
 use HTTP::Request::Common;
 use Data::Dumper;
 use Carp;
+use Time::Piece;
+use Time::Seconds;
 use WWW::UsePerl::Journal;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 use constant UP_URL => 'http://use.perl.org';
 use overload q{""} => sub { $_[0]->stringify() };
 
@@ -58,6 +60,10 @@ sub id
 sub date
 {
     my $self = shift;
+    unless ($self->{date})
+    {
+        $self->get_content();
+    }
     return $self->{date};
 }
 
@@ -132,6 +138,21 @@ sub get_content
     if $content =~ 
     m#Sorry, there are no journal entries 
     found for this user.</TD></TR></TABLE><P>#ismx;
+
+    my ($month, $day, $year, $hr, $mi, $amp) = $content =~ m!
+      <[hH]2> \w+ \s+ (\w+) \s+ (\d+), \s+ (\d+) </[hH]2>
+      .*?
+      (\d+):(\d+) \s+ ([AP]M)
+    !smx;
+    $hr += 12 if ($amp eq 'PM');
+
+    $self->{date} = Time::Piece->strptime(
+   "$month $day $year ${hr}:$mi",
+   '%b %d %Y%n%H:%M'
+    );
+    #$self->{date} += 4*ONE_HOUR; # correct TZ?
+
+
     $content =~ 
     m#.*?$ID</a>\n]\n\s*</font>\n\s*<p>\n\s*(.*?)
     \n\s*<br><br></div>.*#ismx;

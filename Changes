@@ -1,5 +1,12 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.07  Fri Sep 27 17:42:51 BST 2002
+    - Patch from Spoon
+    - Gets date information from posts
+    - "It produces potentially weird results due to time zones. But I believe
+       they are consistently weird. Will probably break if the user logs in."
+       -- the patch author
+
 0.06  Thu Sep 26 10:46:16 BST 2002
     - Internal change to use.perl.org broke things
     - Thanks to Simon Wilcox and Simon Wistow for both reporting it on

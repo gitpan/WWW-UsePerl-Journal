@@ -7,6 +7,7 @@ WriteMakefile(
     'PREREQ_PM'    => { 
                        LWP::UserAgent => 0,
                        Test::Simple => 0.40,
+                       Time::Piece  => 1.07,
                       },
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'lib/WWW/UsePerl/Journal.pm', # retrieve abstract from module
