@@ -2,7 +2,7 @@
 
 use strict;
 use Data::Dumper;
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 use_ok('WWW::UsePerl::Journal');
 
@@ -16,4 +16,11 @@ is($UID, 147, "uid");
 my @entries = $j->recentarray;
 isnt(scalar @entries, 0, "recentarray");
 
-#warn Data::Dumper->Dump([\@entries, $entries[0]->content], [qw/entries content/]);
+my $content = $j->_journalsearch_content; # white box testing
+my @users;
+while ($content =~ m#/~(\w+)/journal/\d+#g) {
+    push @users, $1;
+}
+
+my @entry_users = map { $_->user } @entries;
+is_deeply(\@entry_users, \@users, "...consistency check");

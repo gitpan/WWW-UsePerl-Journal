@@ -18,7 +18,7 @@ use Time::Piece;
 use Time::Seconds;
 use WWW::UsePerl::Journal;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 use constant UP_URL => 'http://use.perl.org';
 use overload q{""} => sub { $_[0]->stringify() };
 
@@ -148,7 +148,7 @@ sub get_content
 
     $self->{date} = Time::Piece->strptime(
    "$month $day $year ${hr}:$mi",
-   '%b %d %Y%n%H:%M'
+   '%B %d %Y %H:%M'
     );
     #$self->{date} += 4*ONE_HOUR; # correct TZ?
 

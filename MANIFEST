@@ -1,7 +1,9 @@
-Changes
 COPYING
+Changes
 MANIFEST
 Makefile.PL
+contrib/journalmonths.pl
+contrib/journalstat.pl
 lib/WWW/UsePerl/Journal.pm
 lib/WWW/UsePerl/Journal/Entry.pm
 t/01test.t

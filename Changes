@@ -1,5 +1,10 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.09  Wed Oct  9 15:11:57 BST 2002
+    - Patch from Kate L Pugh fixes recentarray regex bug
+    - Patch from Richard Clamp to fix his surname and strptime on Mac OS X
+    - Contributed scripts for various statistics by 'jdavidb'
+
 0.08  Fri Oct  4 15:19:30 BST 2002
     - Change in u.p.o broke recentarray - fixed
 

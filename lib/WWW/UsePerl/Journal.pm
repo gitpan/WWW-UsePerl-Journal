@@ -24,7 +24,7 @@ Can post into a journal.
 =cut
 
 use strict;
-use vars qw($VERSION);
+use warnings;
 use LWP::UserAgent;
 use HTTP::Cookies;
 use HTTP::Request::Common;
@@ -44,7 +44,7 @@ my %postdefaults = (
 );
 
 
-$VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head2 new
 
@@ -118,16 +118,8 @@ sub recentarray
     my $self = shift;
     $self->{_recentarray} ||= do
     {
-	my $UID = $self->uid;
-	my $user = $self->user;
-
-	my $content = $self->{ua}->request(
-	    GET UP_URL . "/search.pl?op=journals"
-	)->content;
+	my $content = $self->_journalsearch_content;
 	die "Could not create search list - check your Internet connection" unless $content;
-
-	$content =~ s/^.*\Q<!-- start template: ID 251, journalsearch;search;default -->\E//sm;
-	$content =~ s/<A HREF=\"$site\/search\.pl\?threshold=0&op=journals&sort=1&amp;start=30">Next 30 matches&gt;<\/A>\s*<P>\s*<!-- end template: ID 251, journalsearch;search;default -->.*$//sm;
 
 	my @entries;
 
@@ -155,10 +147,10 @@ sub recentarray
    </FONT>
    \s*
    <P>
-	#migx )
+	#migxs )
 	{
 	    die "$5 is not $6" if $5 ne $6;
-        my $time = Time::Piece->strptime($4, '%Y.%m.%d%n%H:%M');
+        my $time = Time::Piece->strptime($4, '%Y.%m.%d %H:%M');
         #$time += 4*ONE_HOUR; # correct TZ?
 
 	    push @entries, WWW::UsePerl::Journal::Entry->new(
@@ -173,6 +165,21 @@ sub recentarray
 	return @entries;
     }
 }#recentarray
+
+# Internal method: _journalsearch_content
+# Returns a string containing the interesting bit of the journal search page.
+# Split out from recentarray method to make consistency testing easier.
+sub _journalsearch_content {
+	my $self = shift;
+	my $content = $self->{ua}->request(
+	    GET UP_URL . "/search.pl?op=journals"
+	)->content;
+
+	$content =~ s/^.*\Q<!-- start template: ID 251, journalsearch;search;default -->\E//sm;
+	$content =~ s/<A HREF=\"$site\/search\.pl\?threshold=0&op=journals&sort=1&amp;start=30">Next 30 matches&gt;<\/A>\s*<P>\s*<!-- end template: ID 251, journalsearch;search;default -->.*$//sm;
+
+	return $content;
+}#_journalsearch_content
 
 =head2 entryhash
 
@@ -212,7 +219,7 @@ sub entryhash {
         {
             die "Could not match against line:\n[$line]\n";
         }
-        my $time = Time::Piece->strptime($3, '%Y.%m.%d%n%H:%M');
+        my $time = Time::Piece->strptime($3, '%Y.%m.%d %H:%M');
         #$time += 4*ONE_HOUR; # correct TZ?
 
             next unless defined $1;
@@ -396,8 +403,9 @@ F<http://russell.matbouli.org/>
 
 =head1 CONTRIBUTORS
 
-Thanks to Iain Truskett, Richard Clampe, Simon Wilcox and Simon Wistow 
-for sending patches.
+Thanks to Iain Truskett, Richard Clamp, Simon Wilcox, Simon Wistow and
+Kate L Pugh for sending patches. 'jdavidb' also contributed two stats
+scripts.
 
 =head1 TODO
 
