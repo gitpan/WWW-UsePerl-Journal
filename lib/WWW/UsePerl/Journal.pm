@@ -44,7 +44,7 @@ my %postdefaults = (
 );
 
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 =head2 new
 
@@ -124,24 +124,41 @@ sub recentarray
 	my $content = $self->{ua}->request(
 	    GET UP_URL . "/search.pl?op=journals"
 	)->content;
-	die "could not create search list" unless $content;
+	die "Could not create search list - check your Internet connection" unless $content;
 
 	$content =~ s/^.*\Q<!-- start template: ID 251, journalsearch;search;default -->\E//sm;
-	$content =~ s/\Q<!-- end template: ID 251, journalsearch;search;default -->\E.*$//sm;
+	$content =~ s/<A HREF=\"$site\/search\.pl\?threshold=0&op=journals&sort=1&amp;start=30">Next 30 matches&gt;<\/A>\s*<P>\s*<!-- end template: ID 251, journalsearch;search;default -->.*$//sm;
 
 	my @entries;
-	while ( $content =~ m#
-	\Q<A HREF="\E$site/~(\w+)/journal/(\d+)">(.*?)</A>
-	\s*
-	\Q by <A HREF="\E$site/~(\w+)/">(\w+)</A>
-	\s*
-	\Q<FONT SIZE="2">on \E(.*?)\Q</FONT><BR>\E
-	#xg )
+
+# Sample of this on 04/10/2002
+#<B><A HREF="//use.perl.org/~davorg/journal/8165">Buy More Books</A></B><BR>
+#	<FONT SIZE="-1">On 2002.10.04  6:24</FONT><BR>
+#	Yesterday I got my royalty statement for sales of Data Munging with Perl in the...<BR>
+#	<FONT SIZE="-1">
+#	Author: <A HREF="//use.perl.org/~davorg/">davorg</A>
+#
+#	</FONT>
+#	<P>
+
+    while ( $content =~ m#
+   <B><A\s*HREF="$site/~(\w+)/journal/(\d+)">(.+?)</A></B><BR>
+   \s*
+   <FONT\s*SIZE="-1">On\s*(.+?)</FONT><BR>
+   \s*
+   .+?<BR>
+   \s*
+   <FONT\s*SIZE="-1">
+   \s*
+   Author:\s*<A\s*HREF="$site/~(\w+)/">(\w+)</A>
+   \s*
+   </FONT>
+   \s*
+   <P>
+	#migx )
 	{
-	    die "$1 is not $4" if $1 ne $4;
-	    die "$1 is not $5" if $1 ne $5;
-	    die "$4 is not $5" if $4 ne $5;
-        my $time = Time::Piece->strptime($6, '%Y.%m.%d%n%H:%M');
+	    die "$5 is not $6" if $5 ne $6;
+        my $time = Time::Piece->strptime($4, '%Y.%m.%d%n%H:%M');
         #$time += 4*ONE_HOUR; # correct TZ?
 
 	    push @entries, WWW::UsePerl::Journal::Entry->new(
@@ -151,8 +168,6 @@ sub recentarray
 		subject	=> $3,
 		date	=> $time,
 	    );
-
-	    #warn "Posting by $1 on $6 [ $3 ] ($2)\n";
 	}
 
 	return @entries;
