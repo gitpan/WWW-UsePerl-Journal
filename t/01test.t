@@ -21,16 +21,15 @@ isnt(scalar @IDs, 0, "entryids");
 my @titles = $j->entrytitles;
 isnt(scalar @titles, 0, "entrytitles");
 
-my $EID = $j->entry("2340")->content;
-is($EID,
-"I read in <A HREF=\"~hfb/journal/\">hfb's journal</A> that there was no module for testing whether something was a pangram. There is now.",
+my $EID = $j->entry("2340");
+cmp_ok("$EID", 'eq',
+'I read in <A HREF="~hfb/journal/">hfb\'s journal</A> that there was no module for testing whether something was a pangram. There is now.',
 "entry");
 
-my $text = $j->entrytitled("Lingua::Pangram")->content;
-is($text,
-"I read in <A HREF=\"~hfb/journal/\">hfb's journal</A> that there was no module for testing whether something was a pangram. There is now.",
+my $text = $j->entrytitled("Lingua::Pangram");
+cmp_ok("$text", 'eq',
+'I read in <A HREF="~hfb/journal/">hfb\'s journal</A> that there was no module for testing whether something was a pangram. There is now.', 
 "entrytitled");
 
 my $k = new WWW::UsePerl::Journal 1662;
-is($k->user, 'richardc', "username from uid");
-
+cmp_ok($k->user, 'eq', 'richardc', "username from uid");

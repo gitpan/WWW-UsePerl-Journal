@@ -16,8 +16,14 @@ use Data::Dumper;
 use Carp;
 use WWW::UsePerl::Journal;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 use constant UP_URL => 'http://use.perl.org';
+use overload q{""} => sub { $_[0]->stringify() };
+
+sub stringify {
+    my $self = shift;
+    $self->content();
+}
 
 sub new
 {
@@ -25,11 +31,12 @@ sub new
     $class = ref($class) || $class;
 
     my %defaults = (
-	j	=> undef,
-	id	=> undef,
+	j	    => undef,
+	id	    => undef,
 	user	=> undef,
 	subject	=> undef,
 	content	=> undef,
+	date    => undef,
     );
     my %opts = (@_);
 
@@ -46,6 +53,12 @@ sub id
     my $self = shift;
     $self->{id} = $_[0] if (@_);
     return $self->{id};
+}
+
+sub date
+{
+    my $self = shift;
+    return $self->{date};
 }
 
 sub subject

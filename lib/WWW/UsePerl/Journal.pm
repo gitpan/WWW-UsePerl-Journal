@@ -43,7 +43,7 @@ my %postdefaults = (
 );
 
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 =head2 new
 
@@ -367,6 +367,12 @@ Better error checking and test suite.
 Comment retrieval.
 
 Writing activities (modify, delete ...)
+
+=head1 CAVEATS
+
+Beware the stringification of WWW::UsePerl::Journal::Entry objects. 
+They're still objects, they just happen to look the same as before when
+you're printing them. Use -E<gt>content instead.
 
 =head1 LICENSE
 

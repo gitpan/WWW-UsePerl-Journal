@@ -4,7 +4,10 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'	=> 'WWW::UsePerl::Journal',
     'VERSION_FROM' => 'lib/WWW/UsePerl/Journal.pm', # finds $VERSION
-    'PREREQ_PM'    => { LWP::UserAgent => 0 },
+    'PREREQ_PM'    => { 
+                       LWP::UserAgent => 0,
+                       Test::Simple => 0.40,
+                      },
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'lib/WWW/UsePerl/Journal.pm', # retrieve abstract from module
        AUTHOR     =>

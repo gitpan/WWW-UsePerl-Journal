@@ -16,4 +16,4 @@ is($UID, 147, "uid");
 my @entries = $j->recentarray;
 isnt(scalar @entries, 0, "recentarray");
 
-warn Data::Dumper->Dump([\@entries, $entries[0]->content], [qw/entries content/]);
+#warn Data::Dumper->Dump([\@entries, $entries[0]->content], [qw/entries content/]);
