@@ -1,4 +1,10 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.02  Mon Jan 28 02:16:46 GMT 2002
+    - use.perl.org changed some things and everything broke, now fixed.
+    - Interface changed, more OO now...
+    - Posting possible via postEntry (thanks to Iain Truskett!)
+    - Test suite corrected (thanks to Tony Bowden)
+
 0.01  Wed Jan 23 18:56:32 GMT 2002
 	- original version; created by h2xs 1.19

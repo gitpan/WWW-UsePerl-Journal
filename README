@@ -1,15 +1,60 @@
+NAME
+    WWW::UsePerl::Journal - use.perl.org journal tool
+
 SYNOPSIS
       use WWW::UsePerl::Journal;
-      my $journal = WWW::UsePerl::Journal->new()
-      print $journal->getEntryByTitle("russell", "Text::Echelon");
-      my @entries = $journal->getEntryTitles("russell");
+      my $journal = WWW::UsePerl::Journal->new('russell')
+      print $journal->entrytitled("Text::Echelon");
+      my @entries = $journal->entrytitles();
 
 DESCRIPTION
-    Lists journal entries for a user. Can display a specific journal entry.
+    Can list journal entries for a user. Can display a specific journal
+    entry. Can post into a journal.
 
-AVAILABILITY
-    It should be available for download from
-    http://russell.matbouli.org/code/www-useperl-journal/ or from CPAN
+  new
+
+    use WWW::UsePerl::Journal; my $j =
+    WWW::UsePerl::Journal->new('russell');
+
+    Creates an instance for the specified user.
+
+  user
+
+    Returns the username
+
+  uid
+
+    Returns the user ID
+
+  entryhash
+
+    Returns a hash of entry ID => entry title
+
+  entryids
+
+    Returns an array of the entry IDs
+
+  entrytitles
+
+    Returns an array of the entry titles
+
+  entry
+
+    Returns the text of an entry, given an entry ID
+
+  entrytitled
+
+    Returns the text of an entry, given an entry title
+
+  login
+
+    Required before posting can occur, takes the password
+
+  postentry
+
+    Posts an entry into a journal, given a title and the text of the entry
+
+    $j->postentry({title => "My journal is great", text => "It really is"});
 
 AUTHOR
     Russell Matbouli <www-useperl-journal-spam@russell.matbouli.org>
@@ -17,17 +62,17 @@ AUTHOR
     http://russell.matbouli.org/
 
 TODO
-    Optimise via caching - this will be in the next proper release I hope.
+    Better error checking and test suite.
 
-    Better error checking.
+    Comment retrieval.
 
-    Comment retrieval
-
-    Writing activities (comments, create entry, modify, delete ...)
+    Writing activities (comments, modify, delete ...)
 
 LICENSE
     Distributed under GPL v2. See COPYING included with this distibution.
 
 SEE ALSO
     http://use.perl.org/
+
+    LWP
 
