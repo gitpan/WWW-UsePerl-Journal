@@ -1,6 +1,11 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
-0.03 Wed Feb 13 12:46:37 GMT 2002
+0.04  Sun Mar  3 18:01:36 GMT 2002
+    - Changes from koschei
+    - WWW::UsePerl::Journal::Entry class
+    - recentarray, recent journal entries.
+
+0.03  Wed Feb 13 12:46:37 GMT 2002
     - Installed Richard Clamp's patches (finally!)
     - Journal list changed on use.perl
     - user id may be supplied instead of username

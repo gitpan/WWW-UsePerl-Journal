@@ -2,6 +2,7 @@ Changes
 COPYING
 MANIFEST
 Makefile.PL
-Journal.pm
-README
+lib/WWW/UsePerl/Journal.pm
+lib/WWW/UsePerl/Journal/Entry.pm
 t/01test.t
+t/02search.t

@@ -30,9 +30,11 @@ use HTTP::Cookies;
 use HTTP::Request::Common;
 use Data::Dumper;
 use Carp;
+use WWW::UsePerl::Journal::Entry;
 
 
 use constant UP_URL => 'http://use.perl.org';
+my $site = '//use.perl.org';
 
 my %postdefaults = (
     topic     => 34,
@@ -41,7 +43,7 @@ my %postdefaults = (
 );
 
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 =head2 new
 
@@ -104,9 +106,59 @@ sub uid {
     }
 }#getUID
 
+=head2 recentarray
+
+Returns an array of the 30 most recently posted WWW::UsePerl::Journal::Entry objects
+
+=cut
+
+sub recentarray
+{
+    my $self = shift;
+    $self->{_recentarray} ||= do
+    {
+	my $UID = $self->uid;
+	my $user = $self->user;
+
+	my $content = $self->{ua}->request(
+	    GET UP_URL . "/search.pl?op=journals"
+	)->content;
+	die "could not create search list" unless $content;
+
+	$content =~ s/^.*\Q<!-- start template: ID 251, journalsearch;search;default -->\E//sm;
+	$content =~ s/\Q<!-- end template: ID 251, journalsearch;search;default -->\E.*$//sm;
+
+	my @entries;
+	while ( $content =~ m#
+	\Q<A HREF="\E$site/~(\w+)/journal/(\d+)">(.*?)</A>
+	\s*
+	\Q by <A HREF="\E$site/~(\w+)/">(\w+)</A>
+	\s*
+	\Q<FONT SIZE="2">on \E(.*?)\Q</FONT><BR>\E
+	#xg )
+	{
+	    die "$1 is not $4" if $1 ne $4;
+	    die "$1 is not $5" if $1 ne $5;
+	    die "$4 is not $5" if $4 ne $5;
+
+	    push @entries, WWW::UsePerl::Journal::Entry->new(
+		j	=> $self,
+		user	=> $1,
+		id	=> $2,
+		subject	=> $3,
+		date	=> $6
+	    );
+
+	    #warn "Posting by $1 on $6 [ $3 ] ($2)\n";
+	}
+
+	return @entries;
+    }
+}#recentarray
+
 =head2 entryhash
 
-Returns a hash of entry ID =E<gt> entry title
+Returns a hash of WWW::UsePerl::Journal::Entry objects
 
 =cut
 
@@ -127,7 +179,12 @@ sub entryhash {
             $line =~ m#~$user/journal/(\d+)"><b>(.*?)</b></a>#ism;
 
             next unless defined $1;
-            $entries{$1} = $2;
+	    $entries{$1} = WWW::UsePerl::Journal::Entry->new(
+		j	=> $self,
+		user	=> $user,
+		id	=> $1,
+		subject	=> $2,
+	    );
         }
 
     return %entries;
@@ -147,7 +204,7 @@ sub entryids {
         my @IDs;
 
         foreach (sort keys %entries) {
-        $IDs[$#IDs+1] = $_;
+	    $IDs[$#IDs+1] = $_;
         }
         return @IDs;
     }
@@ -166,7 +223,7 @@ sub entrytitles {
         my @titles;
 
         foreach (sort keys %entries) {
-            $titles[$#titles+1] = $entries{$_};
+            $titles[$#titles+1] = $entries{$_}->subject;
         }
         return @titles;
     }
@@ -181,20 +238,11 @@ Returns the text of an entry, given an entry ID
 sub entry {
     my $self = shift;
     my $ID = shift;
-    #$self->{_entry}{_$ID} ||= do {
-        my $UID = $self->uid;
-        my $content = $self->{ua}->request(
-            GET UP_URL . "/journal.pl?op=display&uid=$UID&id=$ID")->content;
-        die "error getting entry" unless $content;
-        die "$ID does not exist" 
-            if $content =~ 
-            m#Sorry, there are no journal entries 
-            found for this user.</TD></TR></TABLE><P>#ismx;
-        $content =~ 
-             m#.*?$ID</a>\n]\n\s*</font>\n\s*<p>\n\s*(.*?)
-             \n\s*<br><br></div>.*#ismx;
-        return $1;
-    #}
+    my $entry = WWW::UsePerl::Journal::Entry->new(
+	j	=> $self,
+	id	=> $ID,
+    );
+    return $entry;
 }#entry
 
 =head2 entrytitled
@@ -208,7 +256,7 @@ sub entrytitled {
     my $title = shift;
     my %entries = $self->entryhash;
     foreach (sort keys %entries) {
-        next unless $entries{$_} =~ /$title/ism;
+        next unless $entries{$_}->subject =~ /$title/ism;
         return $self->entry($_);
     }
     die "$title does not exist";
@@ -247,52 +295,52 @@ sub postentry
     # Validate parameters
     for (qw/text title/)
     {
-    return undef unless exists $params{$_}
+	return undef unless exists $params{$_}
     }
     %params = (%postdefaults, %params);
     $params{comments} = $params{comments} ? 1 : 0;
     if ($params{type} !~ /^[1-4]$/)
     {
-    die "Invalid post type.\n";
-    carp "Invalid post type.\n";
-    return undef;
+	die "Invalid post type.\n";
+	carp "Invalid post type.\n";
+	return undef;
     }
     if ($params{topic} !~ /^\d+$/)
     {
-    die "Invalid journal topic.\n";
-    carp "Invalid journal topic.\n";
-    return undef;
+	die "Invalid journal topic.\n";
+	carp "Invalid journal topic.\n";
+	return undef;
     }
     if (length($params{title}) > 60)
     {
-    die "Subject too long.\n";
-    carp "Subject too long.\n";
-    return undef;
+	die "Subject too long.\n";
+	carp "Subject too long.\n";
+	return undef;
     }
     # Post posting
     my $editwindow =
-        $self->{ua}->request(
-        GET 'http://use.perl.org/journal.pl?op=edit')->content;
-    die "don't have an editwindow" unless $editwindow;
-    my ($formkey) = ($editwindow =~ m/formkey"\s+VALUE="([^"]+)"/ism);
-    die "No formkey!" unless defined $formkey;
-    croak "No formkey!" unless defined $formkey;
-    my %data = (
-    id  => '',
-    state   => 'editing',
-    preview => 'active',
-    formkey => $formkey,
-    description => $params{title},
-    tid => $params{topic},
-    journal_discuss => $params{comments},
-    article => $params{text},
-    posttype    => $params{type},
-    op  => 'save',
-    );
-    my $post = $self->{ua}->request(
-        POST 'http://use.perl.org/journal.pl', \%data);
-    return $post->is_success;
-}#postEntry
+    $self->{ua}->request(
+	GET 'http://use.perl.org/journal.pl?op=edit')->content;
+	die "don't have an editwindow" unless $editwindow;
+	my ($formkey) = ($editwindow =~ m/formkey"\s+VALUE="([^"]+)"/ism);
+	die "No formkey!" unless defined $formkey;
+	croak "No formkey!" unless defined $formkey;
+	my %data = (
+	    id  => '',
+	    state   => 'editing',
+	    preview => 'active',
+	    formkey => $formkey,
+	    description => $params{title},
+	    tid => $params{topic},
+	    journal_discuss => $params{comments},
+	    article => $params{text},
+	    posttype    => $params{type},
+	    op  => 'save',
+	);
+	my $post = $self->{ua}->request(
+	    POST 'http://use.perl.org/journal.pl', \%data);
+	    return $post->is_success;
+	}#postEntry
 
 1;
 __END__
@@ -308,13 +356,17 @@ Russell Matbouli E<lt>www-useperl-journal-spam@russell.matbouli.orgE<gt>
 
 F<http://russell.matbouli.org/>
 
+=head1 CONTRIBUTORS
+
+Thanks to both Iain Truskett and Richard Clampe for sending patches
+
 =head1 TODO
 
 Better error checking and test suite.
 
 Comment retrieval.
 
-Writing activities (comments, modify, delete ...)
+Writing activities (modify, delete ...)
 
 =head1 LICENSE
 

@@ -21,12 +21,12 @@ isnt(scalar @IDs, 0, "entryids");
 my @titles = $j->entrytitles;
 isnt(scalar @titles, 0, "entrytitles");
 
-my $EID = $j->entry("2340");
+my $EID = $j->entry("2340")->content;
 is($EID,
 "I read in <A HREF=\"~hfb/journal/\">hfb's journal</A> that there was no module for testing whether something was a pangram. There is now.",
 "entry");
 
-my $text = $j->entrytitled("Lingua::Pangram");
+my $text = $j->entrytitled("Lingua::Pangram")->content;
 is($text,
 "I read in <A HREF=\"~hfb/journal/\">hfb's journal</A> that there was no module for testing whether something was a pangram. There is now.",
 "entrytitled");
