@@ -23,12 +23,12 @@ isnt(scalar @titles, 0, "entrytitles");
 
 my $EID = $j->entry("2340");
 cmp_ok("$EID", 'eq',
-'I read in <A HREF="~hfb/journal/">hfb\'s journal</A> that there was no module for testing whether something was a pangram. There is now.',
+'I read in <a href="~hfb/journal/" rel="nofollow">hfb\'s journal</a> that there was no module for testing whether something was a pangram. There is now.',
 "entry");
 
 my $text = $j->entrytitled("Lingua::Pangram");
 cmp_ok("$text", 'eq',
-'I read in <A HREF="~hfb/journal/">hfb\'s journal</A> that there was no module for testing whether something was a pangram. There is now.', 
+'I read in <a href="~hfb/journal/" rel="nofollow">hfb\'s journal</a> that there was no module for testing whether something was a pangram. There is now.', 
 "entrytitled");
 
 my $k = new WWW::UsePerl::Journal 1662;

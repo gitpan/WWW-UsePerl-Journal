@@ -1,59 +1,65 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
-0.11  Fri Jan 24 15:11:53 GMT 2003
-    - Fix for change in the title HTML
+0.12	Tue Apr 05 2005
+	- New maintainer - Barbie
+	- Added sort patch from many eons ago
+	- Updated tests to reflect changes to use.perl
+	- Added more test scripts
+
+0.11	Fri Jan 24 15:11:53 GMT 2003
+	- Fix for change in the title HTML
 	- Date code is still broken - it is out by the timezone of the user
 	  who wrote the entry, this may not be fixable if we cannot
 	  determine that user's timezone.
 
-0.10  Mon Oct 14 10:51:25 BST 2002
-    - Patch from Kate L Pugh fixes noon - 1pm bug and newline title bug
+0.10	Mon Oct 14 10:51:25 BST 2002
+	- Patch from Kate L Pugh fixes noon - 1pm bug and newline title bug
 
-0.09  Wed Oct  9 15:11:57 BST 2002
-    - Patch from Kate L Pugh fixes recentarray regex bug
-    - Patch from Richard Clamp to fix his surname and strptime on Mac OS X
-    - Contributed scripts for various statistics by 'jdavidb'
+0.09	Wed Oct  9 15:11:57 BST 2002
+	- Patch from Kate L Pugh fixes recentarray regex bug
+	- Patch from Richard Clamp to fix his surname and strptime on Mac OS X
+	- Contributed scripts for various statistics by 'jdavidb'
 
-0.08  Fri Oct  4 15:19:30 BST 2002
-    - Change in u.p.o broke recentarray - fixed
+0.08	Fri Oct  4 15:19:30 BST 2002
+	- Change in u.p.o broke recentarray - fixed
 
-0.07  Fri Sep 27 17:42:51 BST 2002
-    - Patch from Spoon
-    - Gets date information from posts
-    - "It produces potentially weird results due to time zones. But I believe
-       they are consistently weird. Will probably break if the user logs in."
-       -- the patch author
+0.07	Fri Sep 27 17:42:51 BST 2002
+	- Patch from Spoon
+	- Gets date information from posts
+	- "It produces potentially weird results due to time zones. But I believe
+	  they are consistently weird. Will probably break if the user logs in."
+	  -- the patch author
 
-0.06  Thu Sep 26 10:46:16 BST 2002
-    - Internal change to use.perl.org broke things
-    - Thanks to Simon Wilcox and Simon Wistow for both reporting it on
-      the same day (which confused me ...).
+0.06	Thu Sep 26 10:46:16 BST 2002
+	- Internal change to use.perl.org broke things
+	- Thanks to Simon Wilcox and Simon Wistow for both reporting it on
+	  the same day (which confused me ...).
 
-0.05  Sun Mar  3 20:14:29 GMT 2002
-    - Fixes
-    - Interface had changed due to the introduction of the Entry class
-    - stringification added to it to make it work as it did before
-    - date added to Entry class
-    - added Test::Simple dependency to makefile.
-    - Many thanks to Richard!
+0.05	Sun Mar  3 20:14:29 GMT 2002
+	- Fixes
+	- Interface had changed due to the introduction of the Entry class
+	- stringification added to it to make it work as it did before
+	- date added to Entry class
+	- added Test::Simple dependency to makefile.
+	- Many thanks to Richard!
 
-0.04  Sun Mar  3 18:01:36 GMT 2002
-    - Changes from koschei
-    - WWW::UsePerl::Journal::Entry class
-    - recentarray, recent journal entries.
+0.04	Sun Mar  3 18:01:36 GMT 2002
+	- Changes from koschei
+	- WWW::UsePerl::Journal::Entry class
+	- recentarray, recent journal entries.
 
-0.03  Wed Feb 13 12:46:37 GMT 2002
-    - Installed Richard Clamp's patches (finally!)
-    - Journal list changed on use.perl
-    - user id may be supplied instead of username
-    - Added LWP dependency to makefile.
-    - Thanks Richard!
+0.03	Wed Feb 13 12:46:37 GMT 2002
+	- Installed Richard Clamp's patches (finally!)
+	- Journal list changed on use.perl
+	- user id may be supplied instead of username
+	- Added LWP dependency to makefile.
+	- Thanks Richard!
 
-0.02  Mon Jan 28 02:16:46 GMT 2002
-    - use.perl.org changed some things and everything broke, now fixed.
-    - Interface changed, more OO now...
-    - Posting possible via postEntry (thanks to Iain Truskett!)
-    - Test suite corrected (thanks to Tony Bowden)
+0.02	Mon Jan 28 02:16:46 GMT 2002
+	- use.perl.org changed some things and everything broke, now fixed.
+	- Interface changed, more OO now...
+	- Posting possible via postEntry (thanks to Iain Truskett!)
+	- Test suite corrected (thanks to Tony Bowden)
 
-0.01  Wed Jan 23 18:56:32 GMT 2002
+0.01	Wed Jan 23 18:56:32 GMT 2002
 	- original version; created by h2xs 1.19

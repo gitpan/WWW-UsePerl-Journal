@@ -4,16 +4,12 @@ package WWW::UsePerl::Journal;
 
 WWW::UsePerl::Journal - use.perl.org journal tool
 
-=cut
-
 =head1 SYNOPSIS
 
   use WWW::UsePerl::Journal;
   my $journal = WWW::UsePerl::Journal->new('russell')
   print $journal->entrytitled("Text::Echelon");
   my @entries = $journal->entrytitles();
-
-=cut
 
 =head1 DESCRIPTION
 
@@ -44,12 +40,14 @@ my %postdefaults = (
 );
 
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
+
+=head1 METHODS
 
 =head2 new
 
-use WWW::UsePerl::Journal;
-my $j = WWW::UsePerl::Journal-E<gt>new('russell');
+  use WWW::UsePerl::Journal;
+  my $j = WWW::UsePerl::Journal-E<gt>new('russell');
 
 Creates an instance for the specified user.
 
@@ -232,15 +230,24 @@ sub entryhash {
 
 Returns an array of the entry IDs
 
+Can take an optional hash containing; {descending=>1} to return a descending 
+list of comment IDs, {ascending=>1} to return an ascending list or 
+{threaded=>1} to return a thread ordered list. The latter being the default.
+
 =cut
 
 sub entryids {
     my $self = shift;
-    $self->{_entryids} ||= do {
+	my $hash = shift;
+	my ($key,$sorter) = ('_entryids_thd',sub{0});	# threaded
+	($key,$sorter) = ('_entryids_asc',\&_ascender)	if(defined $hash && $hash->{ascending});
+	($key,$sorter) = ('_entryids_dsc',\&_descender)	if(defined $hash && $hash->{descending});
+
+	$self->{$key} ||= do {
         my %entries = $self->entryhash;
         my @IDs;
 
-        foreach (sort keys %entries) {
+        foreach (sort $sorter keys %entries) {
             $IDs[$#IDs+1] = $_;
         }
         return @IDs;
@@ -251,11 +258,20 @@ sub entryids {
 
 Returns an array of the entry titles
 
+Can take an optional hash containing; {descending=>1} to return a descending 
+list of comment IDs, {ascending=>1} to return an ascending list or 
+{threaded=>1} to return a thread ordered list. The latter being the default.
+
 =cut
 
 sub entrytitles {
     my $self = shift;
-    $self->{_entrytitles} ||= do {
+	my $hash = shift;
+	my ($key,$sorter) = ('_entrytitles_thd',sub{0});		# threaded
+	($key,$sorter) = ('_entrytitless_asc',\&_ascender)	if(defined $hash && $hash->{ascending});
+	($key,$sorter) = ('_entrytitles_dsc',\&_descender)	if(defined $hash && $hash->{descending});
+
+	$self->{_entrytitles} ||= do {
         my %entries = $self->entryhash;
         my @titles;
 
@@ -373,25 +389,13 @@ sub postentry {
         return $post->is_success;
 }
 
+# sort methods
+
+sub _ascender { $a <=> $b }
+sub _descender { $b <=> $a }
+
 1;
 __END__
-=head1 AVAILABILITY
-
-It should be available for download from
-F<http://russell.matbouli.org/code/www-useperl-journal/>
-or from CPAN
-
-=head1 AUTHOR
-
-Russell Matbouli E<lt>www-useperl-journal-spam@russell.matbouli.orgE<gt>
-
-F<http://russell.matbouli.org/>
-
-=head1 CONTRIBUTORS
-
-Thanks to Iain Truskett, Richard Clamp, Simon Wilcox, Simon Wistow and
-Kate L Pugh for sending patches. 'jdavidb' also contributed two stats
-scripts.
 
 =head1 TODO
 
@@ -410,9 +414,16 @@ you're printing them. Use -E<gt>content instead.
 The time on a journal entry is the localtime of the user that created the 
 journal entry. If you aren't in the same timezone, that time will be wrong.
 
-=head1 LICENSE
+=head1 BUGS, PATCHES & FIXES
 
-Distributed under GPL v2. See F<COPYING> included with this distibution.
+There are no known bugs at the time of this release. However, if you spot a
+bug or are experiencing difficulties, that is not explained within the POD
+documentation, please send an email to barbie@cpan.org or submit a bug to the
+RT system (http://rt.cpan.org/). However, it would help greatly if you are 
+able to pinpoint problems or even supply a patch. 
+
+Fixes are dependant upon their severity and my availablity. Should a fix not
+be forthcoming, please feel free to (politely) remind me.
 
 =head1 SEE ALSO
 
@@ -420,4 +431,27 @@ F<http://use.perl.org/>
 
 F<LWP>
 
+=head1 AUTHOR
+
+Original author was Russell Matbouli 
+E<lt>www-useperl-journal-spam@russell.matbouli.orgE<gt>, 
+F<http://russell.matbouli.org/>
+
+Current maintainer is Barbie <barbie@cpan.org>, F<http://birmingham.pm.org>
+
+=head1 CONTRIBUTORS
+
+Thanks to Iain Truskett, Richard Clamp, Simon Wilcox, Simon Wistow and
+Kate L Pugh for sending patches. 'jdavidb' also contributed two stats
+scripts.
+
+=head1 COPYRIGHT AND LICENSE
+
+  Copyright (C) 2002-2004 Russell Matbouli.
+  Copyright (C) 2005      Barbie for Miss Barbell Productions.
+  All Rights Reserved.
+
+  Distributed under GPL v2. See F<COPYING> included with this distibution.
+
 =cut
+
