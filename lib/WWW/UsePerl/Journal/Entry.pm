@@ -1,5 +1,10 @@
 package WWW::UsePerl::Journal::Entry;
 
+use vars qw($AUTOLOAD);
+our $VERSION = '0.13';
+
+#----------------------------------------------------------------------------
+
 =head1 NAME
 
 WWW::UsePerl::Journal::Entry - use.perl.org journal entry
@@ -10,23 +15,54 @@ Do not use directly. See L<WWW::UsePerl::Journal> for details of usage.
 
 =cut
 
+# -------------------------------------
+# Library Modules
+
 use strict;
 use warnings;
 
 use LWP::UserAgent;
 use HTTP::Cookies;
 use HTTP::Request::Common;
-use Data::Dumper;
 use Carp;
 use Time::Piece;
 use Time::Seconds;
 use WWW::UsePerl::Journal;
 
-our $VERSION = '0.06';
+# -------------------------------------
+# Constants & Variables
+
 use constant UP_URL => 'http://use.perl.org';
 use overload q{""}  => sub { $_[0]->stringify() };
 
+# -------------------------------------
+# The Public Interface
+
 =head1 METHODS
+
+=head2 new
+
+  use WWW::UsePerl::Journal::Entry;
+  my $j = WWW::UsePerl::Journal::Entry->new(%hash);
+
+Creates an instance for a specific entry.
+
+=cut
+
+sub new {
+    my $class = shift;
+    $class    = ref($class) || $class;
+    my %opts = (@_);
+    
+    for(qw/j id/) {
+    	return undef	unless(exists $opts{$_});
+    }
+
+    my $self = bless {%opts}, $class;
+    return $self;
+}
+
+sub DESTROY {}
 
 =head2 stringify
 
@@ -44,159 +80,96 @@ sub stringify {
     $self->content();
 }
 
-=head2 new
-
-  use WWW::UsePerl::Journal::Entry;
-  my $j = WWW::UsePerl::Journal::Entry->new(%hash);
-
-Creates an instance for a specific entry.
-
-=cut
-
-sub new {
-    my $class = shift;
-    $class = ref($class) || $class;
-
-    my %defaults = (
-        j       => undef,
-        id      => undef,
-        user    => undef,
-        subject => undef,
-        content => undef,
-        date    => undef,
-    );
-    my %opts = (@_);
-
-
-    die "No parent object" 
-	    unless exists $opts{j} and $opts{j}->isa('WWW::UsePerl::Journal');
-
-    my $self = bless {%defaults, %opts}, $class;
-
-    return $self;
-}
-
 =head2 id
 
-Accessor for the entry id.
+Returns the entry id for the current journal entry.
 
 =cut
 
 sub id {
     my $self = shift;
-    $self->{id} = $_[0] if (@_);
     return $self->{id};
 }
 
-=head2 date
+=head2 The Accessors
 
-Returns the date for the current journal entry.
+The following accessor methods are available:
+
+  date  
+  subject  
+  user
+  uid
+  content
+
+All functions can be called to return the current value of the associated
+object variable.
 
 =cut
 
-sub date {
-    my $self = shift;
-    unless ($self->{date}) {
-        $self->get_content();
-    }
-    return $self->{date};
+my @autosubs = qw( date subject user uid content );
+my %autosubs = map {$_ => 1} @autosubs;
+
+sub AUTOLOAD {
+	no strict 'refs';
+	my $name = $AUTOLOAD;
+	$name =~ s/^.*:://;
+	carp "Unknown sub $AUTOLOAD\n"	unless($autosubs{$name});
+	
+	*$name = sub {
+			my $self = shift;
+			$self->_get_content()	unless($self->{$name});
+			return unless($self->{$name});
+			$self->{$name} =~ s/^\s+//;					# remove leading whitespace
+			$self->{$name} =~ s/\s+$//;					# remove trailing whitespace
+			return $self->{$name};
+	};
+	goto &$name;
 }
 
-=head2 subject
+# -------------------------------------
+# The Private Subs
 
-Accessor for the subject of the current journal entry.
+# name:	_get_content
+# args:	self .... the current object
+# retv: content text
+# desc: Given a uid and journal entry id, will retrieve a specific journal 
+#       entry and disassemble into component parts. returns the content text
 
-=cut
+sub _get_content {
+    my $self      = shift;
+    my $eid       = $self->{id};
+    $self->{uid}  = $self->{j}->uid;
+    $self->{user} = $self->{j}->user;
 
-sub subject {
-    my $self = shift;
-    $self->{subject} = $_[0] if (@_);
-    return $self->{subject};
-}
-
-=head2 user
-
-Accessor for the user of the current journal entry.
-
-=cut
-
-sub user {
-    my $self = shift;
-    $self->{user} = $self->{j}->user(@_) 
-	    unless defined $self->{user};
-    $self->{user}
-}
-
-=head2 uid
-
-  $id = $e->uid($id)
-
-Either sets or returns the id of the user of the entry. If no user is
-set then it uses the user of the parent journal.
-
-=cut
-
-sub uid {
-    my $self = shift;
-    if (@_) {
-        $self->{uid} = $_[0];
-    } else {
-        my $user = $self->user;
-        if ($user ne $self->{j}->user) {
-
-            my $content = $self->{j}->{ua}->request(GET UP_URL 
-		        . "/~$user/")->content;
-            die "Cannot connect to " . UP_URL unless $content;
-
-            $content =~ m#User info for $user \((\d+)\)#ism
-                or die "$user does not exist";
-
-            $self->{uid} = $1;
-        } else {
-            $self->{uid} = $self->{j}->uid;
-        }
-    }
-    $self->{uid};
-}
-
-=head2 content
-
-Accessor for the content of the current journal entry.
-
-=cut
-
-sub content {
-    my $self         = shift;
-    $self->{content} = $_[0] if (@_);
-    $self->{content} = $self->get_content 
-        unless defined $self->{content};
-    $self->{content};
-}
-
-=head2 get_content
-
-Given a uid and journal entry id, will retrieve a specific journal entry and
-disassemble into component parts.
-
-=cut
-
-sub get_content {
-    my $self    = shift;
-    my $ID      = $self->{id};
-    my $UID     = $self->uid;
     my $content = $self->{j}->{ua}->request(
-        GET UP_URL . "/journal.pl?op=display&uid=$UID&id=$ID")->content;
-    die "error getting entry" unless $content;
-    die "$ID does not exist" 
+        GET UP_URL . "/journal.pl?op=display&uid=$self->{uid}&id=$eid")->content;
+
+#print STDERR "\n#e->_get_content: URL=[". UP_URL . "/journal.pl?op=display&uid=$self->{uid}&id=$eid]";
+#print STDERR "\n#content=[$content]\n";
+
+    carp "error getting entry" unless $content;
+    carp "$eid does not exist" 
         if $content =~ 
         m#Sorry, there are no journal entries 
-        found for this user.</TD></TR></TABLE><P>#ismx;
+        found for this user.</TD></TR></TABLE><P>#is;
+    carp "$eid does not exist" 
+        if $content =~ m!Sorry, the requested journal entries were not found.!is;
 
-    my ($month, $day, $year, $hr, $mi, $amp) = $content =~ m!
-      <[hH]2> \w+ \s+ (\w+) \s+ (\d+), \s+ (\d+) </[hH]2>
-      .*?
-      (\d+):(\d+) \s+ ([AP]M)
-    !smx;
+
+    ($self->{subject}) = $content =~ m!
+        <div \s+ id="journalslashdot"> .*?
+        <div \s+ class="title"> \s+ 
+        <h3> \s+ (.*?) \s+ </h3> \s+ </div>
+        !six;
+
+    # date/time fields
+    my ($month, $day, $year) = $content =~ m!
+        <div \s+ class="journaldate">\w+ \s+ (\w+) \s+ (\d+), \s+ (\d+)</div>
+        !six;
+    my ($hr, $mi, $amp) = $content =~ m!
+        <div \s+ class="details">(\d+):(\d+) \s+ ([AP]M)</div>
+        !six;
+
     $hr += 12 if ($amp eq 'PM');
     $hr = 0 if $hr == 24;
 
@@ -206,11 +179,10 @@ sub get_content {
     );
     #$self->{date} += 4*ONE_HOUR; # correct TZ?
 
-
-    $content =~ 
-        m#.*?$ID</a>\n]\n\s*</font>\n\s*<p>\n\s*(.*?)
-        \n\s*<br><br></div>.*#ismx;
-    return $1;
+    $content =~ m! 
+        <div \s+ class="intro">\s*(.*?)\s*</div>
+    !six;
+    $self->{content} = $1;
 }
 
 
@@ -239,10 +211,8 @@ be forthcoming, please feel free to (politely) remind me.
 
 =head1 SEE ALSO
 
+L<WWW::UsePerl::Journal>,
 F<http://use.perl.org/>
-
-F<LWP>,
-L<WWW::UsePerl::Journal>
 
 =head1 AUTHOR
 

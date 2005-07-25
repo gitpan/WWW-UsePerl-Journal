@@ -1,8 +1,12 @@
 package WWW::UsePerl::Journal;
 
+our $VERSION = '0.13';
+
+#----------------------------------------------------------------------------
+
 =head1 NAME
 
-WWW::UsePerl::Journal - use.perl.org journal tool
+WWW::UsePerl::Journal - A use.perl.org journal tool
 
 =head1 SYNOPSIS
 
@@ -13,34 +17,66 @@ WWW::UsePerl::Journal - use.perl.org journal tool
 
 =head1 DESCRIPTION
 
-Can list journal entries for a user.
-Can display a specific journal entry.
-Can post into a journal.
+An all round journal tool for use.perl addicts. Will access journal entries
+for a specific user, or the latest 30 postings, or retrieve a specific
+journal entry. Can also post into a specific user's journal.
 
 =cut
 
+# -------------------------------------
+# Library Modules
+
 use strict;
 use warnings;
+
 use LWP::UserAgent;
 use HTTP::Cookies;
 use HTTP::Request::Common;
-use Data::Dumper;
 use Carp;
 use Time::Piece;
 use WWW::UsePerl::Journal::Entry;
 
+# -------------------------------------
+# Constants & Variables
 
 use constant UP_URL => 'http://use.perl.org';
-my $site = '//use.perl.org';
-
-my %postdefaults = (
-    topic     => 34,
-    comments  => 1,
-    type      => 1,
-);
 
 
-our $VERSION = '0.12';
+# Regular Expressions for Journal Entries
+
+my $JOURNAL = '
+            <div \s+ class="search-results">
+            \s+
+            <h4> \s+ <a \s+ href=".*?~(\w+)/journal/(\d+)">(.+?)</a> \s+ </h4>
+            \s+
+            <div \s+ class="data">
+            \s+ On \s+ (.+?) \s+ </div>
+            \s+
+            <div \s+ class="intro">
+            \s+ .*? </div>
+            \s+
+            <div \s+ class="author">
+            \s+ Author: \s+ <a \s+ href=".*?~(?:\1)/">(?:\1)</a>
+        ';
+
+my $ENTRYLIST = '
+            <tr> \s+
+            <td \s+ valign="top"><a \s+ href="//use.perl.org/~\w+/journal/(\d+)">
+            <b>(.*?)</b></a></td> \s+
+            <td \s+ valign="top"><em>(.*?)</em></td> \s+ </tr>
+        ';
+
+my $USER = '
+            <title>Journal \s+ of \s+ (.*?) \s+ \(\d+\) \s* </title>
+        ';
+
+my $UID = '
+            <div \s+ class="title" \s+ id="user-info-title"> \s+ 
+            <h4> \s+ (.*?) \s+ \((\d+)\) \s+ </h4> \s+ </div>
+        ';
+
+# -------------------------------------
+# The Public Interface
 
 =head1 METHODS
 
@@ -56,12 +92,15 @@ Creates an instance for the specified user.
 sub new {
     my $class = shift;
     my $user  = shift or die "We need a user!";
+
     my $ua    = LWP::UserAgent->new(env_proxy => 1);
     $ua->cookie_jar(HTTP::Cookies->new());
+
     my $self  = bless { 
         ($user =~ /^\d+$/ ? '_uid' : '_user') => $user,
         ua => $ua,
         }, $class;
+
     return $self;
 }
 
@@ -75,13 +114,14 @@ sub user {
     my $self = shift;
     $self->{_user} ||= do {
         my $uid = $self->uid;
-
         my $content = $self->{ua}->request(GET UP_URL .
             "/journal.pl?op=list&uid=$uid")->content;
-        die "Cannot connect to " . UP_URL unless $content;
+        carp "Cannot connect to " . UP_URL unless $content;
 
-        $content =~ m#<HTML><HEAD><TITLE>Journal of (.*?) \(\d+\)</TITLE>#
-          or die "$uid does not exist";
+#print STDERR "\n#j->user: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]\n";
+#print STDERR "\n#content=[$content]\n";
+
+        $content =~ m!$USER!six or return undef;
         $1;
     }
 }
@@ -96,19 +136,21 @@ sub uid {
     my $self = shift;
     $self->{_uid} ||= do {
         my $user = $self->user;
-
         my $content = $self->{ua}->request(GET UP_URL . "/~$user/")->content;
-        die "Cannot connect to " . UP_URL unless $content;
+        carp "Cannot connect to " . UP_URL unless $content;
 
-        $content =~ m#$user \((\d+)\)#ism
-            or die "$user does not exist";
-        $1;
+#print STDERR "\n#j->uid: URL=[". UP_URL . "/~$user/]\n";
+#print STDERR "\n#content=[$content]\n";
+
+        $content =~ m!$UID!six or return undef;
+        $2;
     }
 }
 
 =head2 recentarray
 
-Returns an array of the 30 most recently posted WWW::UsePerl::Journal::Entry objects
+Returns an array of the 30 most recently posted WWW::UsePerl::Journal::Entry
+objects.
 
 =cut
 
@@ -116,51 +158,26 @@ sub recentarray {
     my $self = shift;
     $self->{_recentarray} ||= do
     {
-    my $content = $self->_journalsearch_content;
-    die "Could not create search list - check your Internet connection" 
-	    unless $content;
+        my $content = $self->_journalsearch_content;
+        carp "Could not create search list - check your Internet connection" 
+            unless $content;
 
-    my @entries;
+        my @entries;
 
-# Sample of this on 04/10/2002
-#<B><A HREF="//use.perl.org/~davorg/journal/8165">Buy More Books</A></B><BR>
-#    <FONT SIZE="-1">On 2002.10.04  6:24</FONT><BR>
-#    Yesterday I got my royalty statement for sales of Data Munging with Perl in the...<BR>
-#    <FONT SIZE="-1">
-#    Author: <A HREF="//use.perl.org/~davorg/">davorg</A>
-#
-#    </FONT>
-#    <P>
+        while ( $content =~ m!$JOURNAL!igxs ) {
+            my $time = Time::Piece->strptime($4, '%Y.%m.%d %H:%M');
+            #$time += 4*ONE_HOUR; # correct TZ?
 
-    while ( $content =~ m#
-        <B><A\s*HREF="$site/~(\w+)/journal/(\d+)">(.+?)</A></B><BR>
-        \s*
-        <FONT\s*SIZE="-1">On\s*(.+?)</FONT><BR>
-        \s*
-        .+?<BR>
-        \s*
-        <FONT\s*SIZE="-1">
-        \s*
-        Author:\s*<A\s*HREF="$site/~(\w+)/">(\w+)</A>
-        \s*
-        </FONT>
-        \s*
-        <P>
-    #migxs ) {
-        die "$5 is not $6" if $5 ne $6;
-        my $time = Time::Piece->strptime($4, '%Y.%m.%d %H:%M');
-        #$time += 4*ONE_HOUR; # correct TZ?
+            push @entries, WWW::UsePerl::Journal::Entry->new(
+                j       => $self,
+                user    => $1,
+                id      => $2,
+                subject => $3,
+                date    => $time,
+            );
+        }
 
-        push @entries, WWW::UsePerl::Journal::Entry->new(
-            j       => $self,
-            user    => $1,
-            id      => $2,
-            subject => $3,
-            date    => $time,
-        );
-    }
-
-    return @entries;
+        return @entries;
     }
 }
 
@@ -172,14 +189,8 @@ sub _journalsearch_content {
     my $content = $self->{ua}->request(
         GET UP_URL . "/search.pl?op=journals")->content;
 
-    $content =~ 
-        s/^.*\Q<!-- start template: ID 251,
-        journalsearch;search;default -->\E//sm;
-    $content =~ 
-        s/<A HREF=\"$site\/search\.pl\?threshold=0&op=journals
-		&sort=1&amp;start=30">Next 30 matches&gt;
-		<\/A>\s*<P>\s*
-		<!-- end template: ID 251, journalsearch;search;default -->.*$//sm;
+    $content =~ s/^.*\Q<div class="journalsearch">//sm;
+    $content =~ s/<div class="pagination">.*$//sm;
 
     return $content;
 }
@@ -193,26 +204,23 @@ Returns a hash of WWW::UsePerl::Journal::Entry objects
 sub entryhash {
     my $self = shift;
     $self->{_entryhash} ||= do {
-        my $UID = $self->uid;
+        my $uid  = $self->uid;
         my $user = $self->user;
 
         my $content = $self->{ua}->request(
-            GET UP_URL . "/journal.pl?op=list&uid=$UID")->content;
-        die "could not create entry list" unless $content;
+            GET UP_URL . "/journal.pl?op=list&uid=$uid")->content;
+        carp "could not create entry list" unless $content;
 
         my %entries;
 
-        while ( $content =~ m#
-            ~$user/journal/(\d+)"><b>(.*?)</b></a></td>
-            [\s\r\n]*
-            <[^<]+><em>
-            ([^<]+)
-            </em></[^<]+>
-        #migxs ) {
+#print STDERR "\n#j->entryhash: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]";
+#print STDERR "\n#content=[$content]\n";
+
+        while ( $content =~ m!$ENTRYLIST!igxs ) {
+
             my $time = Time::Piece->strptime($3, '%Y.%m.%d %H:%M');
             #$time += 4*ONE_HOUR; # correct TZ?
 
-            next unless defined $1;
             $entries{$1} = WWW::UsePerl::Journal::Entry->new(
                 j       => $self,
                 user    => $user,
@@ -222,7 +230,7 @@ sub entryhash {
             );
         }
 
-    return %entries;
+        return %entries;
     }
 }
 
@@ -238,19 +246,19 @@ list of comment IDs, {ascending=>1} to return an ascending list or
 
 sub entryids {
     my $self = shift;
-	my $hash = shift;
-	my ($key,$sorter) = ('_entryids_thd',sub{0});	# threaded
-	($key,$sorter) = ('_entryids_asc',\&_ascender)	if(defined $hash && $hash->{ascending});
-	($key,$sorter) = ('_entryids_dsc',\&_descender)	if(defined $hash && $hash->{descending});
+    my $hash = shift;
+    my ($key,$sorter) = ('_entryids_thd',sub{-1});	# threaded
+    ($key,$sorter) = ('_entryids_asc',\&_ascender)	if(defined $hash && $hash->{ascending});
+    ($key,$sorter) = ('_entryids_dsc',\&_descender)	if(defined $hash && $hash->{descending});
 
-	$self->{$key} ||= do {
+    $self->{$key} ||= do {
         my %entries = $self->entryhash;
-        my @IDs;
+        my @ids;
 
         foreach (sort $sorter keys %entries) {
-            $IDs[$#IDs+1] = $_;
+            $ids[$#ids+1] = $_;
         }
-        return @IDs;
+        return @ids;
     }
 }
 
@@ -266,16 +274,16 @@ list of comment IDs, {ascending=>1} to return an ascending list or
 
 sub entrytitles {
     my $self = shift;
-	my $hash = shift;
-	my ($key,$sorter) = ('_entrytitles_thd',sub{0});		# threaded
-	($key,$sorter) = ('_entrytitless_asc',\&_ascender)	if(defined $hash && $hash->{ascending});
-	($key,$sorter) = ('_entrytitles_dsc',\&_descender)	if(defined $hash && $hash->{descending});
+    my $hash = shift;
+    my ($key,$sorter) = ('_titles_thd',sub{-1});	# threaded
+    ($key,$sorter) = ('_titles_asc',\&_ascender)	if(defined $hash && $hash->{ascending});
+    ($key,$sorter) = ('_titles_dsc',\&_descender)	if(defined $hash && $hash->{descending});
 
-	$self->{_entrytitles} ||= do {
+    $self->{$key} ||= do {
         my %entries = $self->entryhash;
         my @titles;
 
-        foreach (sort keys %entries) {
+        foreach (sort $sorter keys %entries) {
             $titles[$#titles+1] = $entries{$_}->subject;
         }
         return @titles;
@@ -290,12 +298,15 @@ Returns the text of an entry, given an entry ID
 
 sub entry {
     my $self = shift;
-    my $ID = shift;
+    my $id   = shift;
+
     my $entry = WWW::UsePerl::Journal::Entry->new(
         j     => $self,
-        id    => $ID,
+        id    => $id,
     );
-    return $entry;
+
+    return undef    unless($entry);
+    return $entry->content;
 }
 
 =head2 entrytitled
@@ -305,14 +316,15 @@ Returns the text of an entry, given an entry title
 =cut
 
 sub entrytitled {
-    my $self = shift;
-    my $title = shift;
+    my $self    = shift;
+    my $title   = shift;
     my %entries = $self->entryhash;
-    foreach (sort keys %entries) {
+
+    foreach (keys %entries) {
         next unless $entries{$_}->subject =~ /$title/ism;
         return $self->entry($_);
     }
-    die "$title does not exist";
+    carp "$title does not exist";
 }
 
 =head2 login
@@ -322,76 +334,17 @@ Required before posting can occur, takes the password
 =cut
 
 sub login {
-    my ($self, $passwd) = (@_);
-    my $user = $self->user;
-    my $login =
-        $self->{ua}->request(
-           GET UP_URL . "/users.pl?op=userlogin&unickname=$user&upasswd=$passwd"
-        )->content;
-    die "login failed" unless $login;
-    return ( $login =~ /Welcome back $user/ism ) ? 1 : 0;
-}
-
-=head2 postentry
-
-Posts an entry into a journal, given a title and the text of the entry
-
-$j-E<gt>postentry({title =E<gt> "My journal is great", text =E<gt> "It really is"});
-
-=cut
-
-sub postentry {
-    my $self = shift;
-    my %params = (@_);
-    # Validate parameters
-    for (qw/text title/) {
-        return undef unless exists $params{$_}
-    }
-    %params = (%postdefaults, %params);
-    $params{comments} = $params{comments} ? 1 : 0;
-    if ($params{type} !~ /^[1-4]$/) {
-        die "Invalid post type.\n";
-        carp "Invalid post type.\n";
-        return undef;
-    }
-    if ($params{topic} !~ /^\d+$/) {
-        die "Invalid journal topic.\n";
-        carp "Invalid journal topic.\n";
-        return undef;
-    }
-    if (length($params{title}) > 60) {
-        die "Subject too long.\n";
-        carp "Subject too long.\n";
-        return undef;
-    }
-    # Post posting
-    my $editwindow =
-        $self->{ua}->request(
-        GET 'http://use.perl.org/journal.pl?op=edit')->content;
-    die "don't have an editwindow" unless $editwindow;
-    my ($formkey) = ($editwindow =~ m/formkey"\s+VALUE="([^"]+)"/ism);
-    die "No formkey!" unless defined $formkey;
-    croak "No formkey!" unless defined $formkey;
-    my %data = (
-        id              => '',
-        state           => 'editing',
-        preview         => 'active',
-        formkey         => $formkey,
-        description     => $params{title},
-        tid             => $params{topic},
-        journal_discuss => $params{comments},
-        article         => $params{text},
-        posttype        => $params{type},
-        op              => 'save',
-    );
-    my $post = $self->{ua}->request(
-        POST 'http://use.perl.org/journal.pl', \%data);
-        return $post->is_success;
+    my ($self, $pass) = (@_);
+    my $user  = $self->user;
+    return WWW::UsePerl::Journal::Post->new({
+        username => $user,
+        password => $pass
+    });
 }
 
 # sort methods
 
-sub _ascender { $a <=> $b }
+sub _ascender  { $a <=> $b }
 sub _descender { $b <=> $a }
 
 1;

@@ -6,10 +6,13 @@ contrib/journalmonths.pl
 contrib/journalstat.pl
 lib/WWW/UsePerl/Journal.pm
 lib/WWW/UsePerl/Journal/Entry.pm
-t/01test.t
-t/02search.t
-t/03date.t
+lib/WWW/UsePerl/Journal/Post.pm
+t/01base.t
+t/11test.t
+t/12search.t
+t/13date.t
+t/21badtest.t
+t/23entry.t
 t/90podtest.t
 t/91podcover.t
-
 META.yml                                 Module meta-data (added by MakeMaker)

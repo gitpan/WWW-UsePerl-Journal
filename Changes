@@ -1,5 +1,11 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.13	Fri Jul 22 2005
+	- use.perl layout changes (inc Simon Wilcox - RT #13748)
+	- refactored test scripts
+	- refactored journal post code
+	- Added more test scripts
+
 0.12	Tue Apr 05 2005
 	- New maintainer - Barbie
 	- Added sort patch from many eons ago
