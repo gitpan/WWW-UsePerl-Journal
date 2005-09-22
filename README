@@ -1,0 +1,47 @@
+WWW::UsePerl::Journal
+=====================
+
+DESCRIPTION
+
+An all round journal tool for use.perl addicts. Will access journal entries
+for a specific user, or the latest 30 postings, or retrieve a specific
+journal entry. Can also post into a specific user's journal.
+
+DEPENDENCIES
+
+The distribution requires the following modules:
+
+  LWP::UserAgent        => 0,
+  Time::Piece           => 1.07,
+  Test::Simple          => 0.40,
+  Test::More            => 0,
+
+CHANGES
+
+See the Changes file for a list of updates to the distribution.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+AUTHOR
+
+Original author was Russell Matbouli 
+<www-useperl-journal-spam@russell.matbouli.org>, 
+<http://russell.matbouli.org/>
+
+Current maintainer is Barbie <barbie@cpan.org>.
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2002-2004 Russell Matbouli.
+Copyright (C) 2005      Barbie for Miss Barbell Productions.
+All Rights Reserved.
+
+Distributed under GPL v2. See COPYING included with this distibution.
+

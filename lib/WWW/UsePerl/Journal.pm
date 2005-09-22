@@ -1,6 +1,6 @@
 package WWW::UsePerl::Journal;
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 #----------------------------------------------------------------------------
 
@@ -34,7 +34,9 @@ use HTTP::Cookies;
 use HTTP::Request::Common;
 use Carp;
 use Time::Piece;
+
 use WWW::UsePerl::Journal::Entry;
+use WWW::UsePerl::Journal::Post;
 
 # -------------------------------------
 # Constants & Variables
@@ -239,7 +241,7 @@ sub entryhash {
 Returns an array of the entry IDs
 
 Can take an optional hash containing; {descending=>1} to return a descending 
-list of comment IDs, {ascending=>1} to return an ascending list or 
+list of journal IDs, {ascending=>1} to return an ascending list or 
 {threaded=>1} to return a thread ordered list. The latter being the default.
 
 =cut
@@ -327,9 +329,27 @@ sub entrytitled {
     carp "$title does not exist";
 }
 
+=head2 refresh
+
+To save time, entries are cached. However, following a post or 
+period of waiting, you may want to refresh the list. This functions
+allows you to clear the cache and start again.
+
+=cut
+
+sub refresh {
+    my $self    = shift;
+    $self->{$_} = () 
+        for(   '_recentarray','_entryhash',
+               '_titles_thd','_titles_asc','_titles_dsc',
+               '_entryids_thd','_entryids_asc','_entryids_dsc');
+}
+
 =head2 login
 
-Required before posting can occur, takes the password
+Required before posting can occur, takes the password.
+
+  my $post = $j->login($password);
 
 =cut
 
@@ -390,7 +410,7 @@ Original author was Russell Matbouli
 E<lt>www-useperl-journal-spam@russell.matbouli.orgE<gt>, 
 F<http://russell.matbouli.org/>
 
-Current maintainer is Barbie <barbie@cpan.org>, F<http://birmingham.pm.org>
+Current maintainer is Barbie <barbie@cpan.org>.
 
 =head1 CONTRIBUTORS
 

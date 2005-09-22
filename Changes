@@ -1,5 +1,10 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.14	22 Sep 2005
+	- updated journal post code (RT #4718)
+	- added refresh() method to clear the cache
+	- removed 22post.t so use.perl isn't bombarded with testing :)
+
 0.13	Fri Jul 22 2005
 	- use.perl layout changes (inc Simon Wilcox - RT #13748)
 	- refactored test scripts

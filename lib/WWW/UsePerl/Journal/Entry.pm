@@ -1,7 +1,7 @@
 package WWW::UsePerl::Journal::Entry;
 
 use vars qw($AUTOLOAD);
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 #----------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 package WWW::UsePerl::Journal::Post;
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 #----------------------------------------------------------------------------
 
@@ -27,6 +27,10 @@ WWW::UsePerl::Journal::Post - use.perl.org journal post tool
     comments => 1,
     type     => 1
   );
+
+  # delete an entry you don't want
+  # WARNING: this is permanent!
+  $post->deleteentry($eid);
 
 =head1 DESCRIPTION
 
@@ -99,19 +103,20 @@ sub login {
     my $login =
         $self->{ua}->request(
            GET UP_URL . "/users.pl?op=userlogin&" .
-	   "unickname=$self->{username}&" .
-	   "upasswd=$self->{password}"
+           "unickname=$self->{username}&" .
+           "upasswd=$self->{password}"
         )->content;
 
-    return undef	unless $login;
-    return $login;
+#    print STDERR "\n#login=\n$login\n";
+    return undef	if($login =~ /Forget your password/);
+    return 1;
 }
 
 =head2 postentry
 
 Posts an entry into a journal, given a title and the text of the entry
 
-  $j->postentry({title => "My journal is great", text => "It really is"});
+  $j->postentry(title => "My journal is great", text => "It really is");
 
 =cut
 
@@ -121,23 +126,30 @@ sub postentry {
 
     # Validate parameters
     for (qw/text title/) {
-        die "missing $_ field from postentry" unless exists $params{$_}
+        return $self->_posterror("missing $_ field from postentry") unless exists $params{$_}
     }
 
     %params = (%postdefaults, %params);
-    $params{comments} = $params{comments} ? 1 : 0;
-    carp "Invalid post type.\n"		if ($params{type} !~ /^[1-4]$/);
-    carp "Invalid journal topic.\n"	if ($params{topic} !~ /^\d+$/);
-    carp "Subject too long.\n"		if (length($params{title}) > 60);
+    $params{comments} = $params{comments} ? 'enabled' : 'disabled';
+
+    return $self->_posterror("Invalid post type.\n")		
+        if ($params{type}  =~ /[^\d]/ || $params{type}  <  1 || 
+                                         $params{type}  >  4);
+    return $self->_posterror("Invalid journal topic.\n")	
+        if ($params{topic} =~ /[^\d]/ || $params{topic} <  1 || 
+                                         $params{topic} > 37 || 
+                                         $params{topic} == 16);
+    return $self->_posterror("Subject too long.\n")		
+        if (length($params{title}) > 60);
 
     # Post posting
     my $editwindow =
         $self->{ua}->request(
         GET UP_URL . '/journal.pl?op=edit')->content;
-    carp "Can't get an editwindow" unless $editwindow;
+    return $self->_posterror("Can't get an editwindow") unless $editwindow;
 
     my ($formkey) = ($editwindow =~ m/formkey"\s+VALUE="([^"]+)"/ism);
-    croak "No formkey!" unless defined $formkey;
+    return $self->_posterror("No formkey!") unless defined $formkey;
 
     my %data = (
         id              => '',
@@ -151,15 +163,37 @@ sub postentry {
         posttype        => $params{type},
         op              => 'save',
     );
+
     my $post = $self->{ua}->request(POST UP_URL . '/journal.pl', \%data);
-    return $post->is_success;
+    return $self->_posterror("Failed LWP POST request") unless $post->is_success;
+    return 1;
 }
+
+sub _posterror {
+    my ($self,$text) = @_;
+    $self->{posterror} = $text;
+    return 0;
+}
+
+=head2 posterror
+
+Returns the error string when a postentry fails (returns 0).
+
+=cut
+
+sub posterror {
+    my $self = shift;
+    $self->{posterror};
+}
+
 
 =head2 deleteentry
 
 Deletes an entry from a journal, given the entry id.
 
   $j->deleteentry($eid);
+
+NOTE: This currently doesn't work!
 
 =cut
 
@@ -169,12 +203,14 @@ sub deleteentry {
     my $content =
         $self->{ua}->request(
         GET UP_URL . '/journal.pl?op=removemeta&id=' . $eid)->content;
-    carp "No response for deletion" unless $content;
+    return $self->_posterror("No response for deletion") unless $content;
 
     $content =
         $self->{ua}->request(
         GET UP_URL . '/journal.pl?op=remove&del_' . $eid . '=1')->content;
-    carp "No response for deletion" unless $content;
+    return $self->_posterror("No response for deletion") unless $content;
+
+#    print STDERR "\n#content=\n$content\n";
 }
 
 1;
@@ -182,14 +218,25 @@ __END__
 
 =head1 BUGS, PATCHES & FIXES
 
-There are no known bugs at the time of this release. However, if you spot a
-bug or are experiencing difficulties, that is not explained within the POD
-documentation, please send an email to barbie@cpan.org or submit a bug to the
-RT system (http://rt.cpan.org/). However, it would help greatly if you are 
-able to pinpoint problems or even supply a patch. 
+If you spot a bug or are experiencing difficulties, that is not explained 
+within the POD documentation, please send an email to barbie@cpan.org or 
+submit a bug to the RT system (http://rt.cpan.org/). However, it would help 
+greatly if you are able to pinpoint problems or even supply a patch. 
 
 Fixes are dependant upon their severity and my availablity. Should a fix not
 be forthcoming, please feel free to (politely) remind me.
+
+=head2 Known Bugs
+
+=over 4
+
+=item * deleteentry
+
+It appears that although the request to delete an entry is correct, there
+is obviously something I'm missing, because it doesn't actually get deleted
+from the use.perl system :(
+
+=back
 
 =head1 SEE ALSO
 
