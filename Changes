@@ -1,5 +1,23 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.15	22 Sep 2005
+	- fixed several test bugs, including the date parsing issues.
+	- WUJ::Post->new() now takes a hash as it states in the docs.
+	- Rewrote some of the internals so they correctly cache results. 
+	- Bit of an overhaul of the code so that underlying Entry objects are 
+	  returned more appropriate, with the caller able to access the Entry
+	  methods more directly. 
+	- Error handling rewritten so the modules don't fail under pressure,
+	  just return undef and set an $j->error().
+	- Post.pm has had a fresh look and form completion has been updated.
+	- Lots more testing, including developer only tests (not included).
+	- Handwritten META.yml to conform to current specs.
+	- Changed all instances of LICENCE to LICENSE.
+	- Added META.yml test script.
+	- Added LICENSE and Artistic files.
+	- Renamed the contrib directory to examples.
+	- POD/README updates.
+
 0.14	22 Sep 2005
 	- updated journal post code (RT #4718)
 	- added refresh() method to clear the cache

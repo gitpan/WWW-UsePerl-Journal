@@ -1,6 +1,9 @@
 package WWW::UsePerl::Journal;
 
-our $VERSION = '0.14';
+use strict;
+use warnings;
+
+our $VERSION = '0.15';
 
 #----------------------------------------------------------------------------
 
@@ -25,9 +28,6 @@ journal entry. Can also post into a specific user's journal.
 
 # -------------------------------------
 # Library Modules
-
-use strict;
-use warnings;
 
 use LWP::UserAgent;
 use HTTP::Cookies;
@@ -85,15 +85,16 @@ my $UID = '
 =head2 new
 
   use WWW::UsePerl::Journal;
-  my $j = WWW::UsePerl::Journal-E<gt>new('russell');
+  my $j1 = WWW::UsePerl::Journal->new('russell');
+  my $j2 = WWW::UsePerl::Journal->new(1413);
 
-Creates an instance for the specified user.
+Creates an instance for the specified user, using either a username or userid.
 
 =cut
 
 sub new {
     my $class = shift;
-    my $user  = shift or die "We need a user!";
+    my $user  = shift or return;    #die "We need a user!";
 
     my $ua    = LWP::UserAgent->new(env_proxy => 1);
     $ua->cookie_jar(HTTP::Cookies->new());
@@ -106,6 +107,24 @@ sub new {
     return $self;
 }
 
+=head2 error
+
+If an error message given, sets the current message and returns undef. If no 
+message given returns that last error message.
+
+=cut
+
+sub error {
+    my $self = shift;
+
+    if(@_) {
+        $self->{error} = shift;
+        return;
+    }
+
+    $self->{error};
+}
+
 =head2 user
 
 Returns the username
@@ -116,14 +135,14 @@ sub user {
     my $self = shift;
     $self->{_user} ||= do {
         my $uid = $self->uid;
-        my $content = $self->{ua}->request(GET UP_URL .
-            "/journal.pl?op=list&uid=$uid")->content;
-        carp "Cannot connect to " . UP_URL unless $content;
+        my $content = $self->{ua}->request(GET UP_URL . "/journal.pl?op=list&uid=$uid")->content;
+        return $self->error("Cannot connect to " . UP_URL)  unless ($content);
 
 #print STDERR "\n#j->user: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]\n";
 #print STDERR "\n#content=[$content]\n";
 
-        $content =~ m!$USER!six or return undef;
+        $content =~ m!$USER!six or return $self->error("Cannot obtain username.");
+        return $self->error("Cannot obtain username.")  unless($1);
         $1;
     }
 }
@@ -139,12 +158,12 @@ sub uid {
     $self->{_uid} ||= do {
         my $user = $self->user;
         my $content = $self->{ua}->request(GET UP_URL . "/~$user/")->content;
-        carp "Cannot connect to " . UP_URL unless $content;
+        return $self->error( "Cannot connect to " . UP_URL )    unless $content;
 
 #print STDERR "\n#j->uid: URL=[". UP_URL . "/~$user/]\n";
 #print STDERR "\n#content=[$content]\n";
 
-        $content =~ m!$UID!six or return undef;
+        $content =~ m!$UID!six or return $self->error("Cannot obtain userid.");
         $2;
     }
 }
@@ -161,7 +180,7 @@ sub recentarray {
     $self->{_recentarray} ||= do
     {
         my $content = $self->_journalsearch_content;
-        carp "Could not create search list - check your Internet connection" 
+        return $self->error( "Could not create search list - check your Internet connection" )
             unless $content;
 
         my @entries;
@@ -172,15 +191,17 @@ sub recentarray {
 
             push @entries, WWW::UsePerl::Journal::Entry->new(
                 j       => $self,
-                user    => $1,
-                id      => $2,
+                author  => $1,
+                eid     => $2,
                 subject => $3,
                 date    => $time,
             );
         }
 
-        return @entries;
-    }
+        \@entries;
+    };
+
+    return @{$self->{_recentarray}};
 }
 
 # Internal method: _journalsearch_content
@@ -188,8 +209,8 @@ sub recentarray {
 # Split out from recentarray method to make consistency testing easier.
 sub _journalsearch_content {
     my $self = shift;
-    my $content = $self->{ua}->request(
-        GET UP_URL . "/search.pl?op=journals")->content;
+    my $content = $self->{ua}->request( GET UP_URL . "/search.pl?op=journals")->content;
+    return $self->error("Cannot connect to " . UP_URL . "/search.pl?op=journals")  unless ($content);
 
     $content =~ s/^.*\Q<div class="journalsearch">//sm;
     $content =~ s/<div class="pagination">.*$//sm;
@@ -206,16 +227,16 @@ Returns a hash of WWW::UsePerl::Journal::Entry objects
 sub entryhash {
     my $self = shift;
     $self->{_entryhash} ||= do {
-        my $uid  = $self->uid;
-        my $user = $self->user;
+        my $uid  = $self->uid  || '';
+        my $user = $self->user || '';
+        return $self->error("Could not retrieve user details ($uid,$user)") unless $uid && $user;
 
-        my $content = $self->{ua}->request(
-            GET UP_URL . "/journal.pl?op=list&uid=$uid")->content;
-        carp "could not create entry list" unless $content;
+        my $content = $self->{ua}->request(GET UP_URL . "/journal.pl?op=list&uid=$uid")->content;
+        return $self->error("Could not create entry list") unless $content;
 
         my %entries;
 
-#print STDERR "\n#j->entryhash: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]";
+#print STDERR "\n#j->entryhash: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]\n";
 #print STDERR "\n#content=[$content]\n";
 
         while ( $content =~ m!$ENTRYLIST!igxs ) {
@@ -225,15 +246,17 @@ sub entryhash {
 
             $entries{$1} = WWW::UsePerl::Journal::Entry->new(
                 j       => $self,
-                user    => $user,
-                id      => $1,
+                author  => $user,
+                eid     => $1,
                 subject => $2,
                 date    => $time,
             );
         }
 
-        return %entries;
-    }
+        \%entries;
+    };
+
+    return %{$self->{_entryhash}};
 }
 
 =head2 entryids
@@ -248,20 +271,19 @@ list of journal IDs, {ascending=>1} to return an ascending list or
 
 sub entryids {
     my $self = shift;
-    my $hash = shift;
-    my ($key,$sorter) = ('_entryids_thd',sub{-1});	# threaded
-    ($key,$sorter) = ('_entryids_asc',\&_ascender)	if(defined $hash && $hash->{ascending});
-    ($key,$sorter) = ('_entryids_dsc',\&_descender)	if(defined $hash && $hash->{descending});
+    my %hash = @_;
+    my ($key,$sorter) = ('_entryids_thd',sub{-1});	    # threaded
+       ($key,$sorter) = ('_entryids_asc',\&_ascender)	if($hash{ascending});
+       ($key,$sorter) = ('_entryids_dsc',\&_descender)	if($hash{descending});
 
     $self->{$key} ||= do {
         my %entries = $self->entryhash;
         my @ids;
+        foreach (sort $sorter keys %entries) { push @ids, $_; }
+        \@ids;
+    };
 
-        foreach (sort $sorter keys %entries) {
-            $ids[$#ids+1] = $_;
-        }
-        return @ids;
-    }
+    return $self->{$key} ? @{$self->{$key}} : ();
 }
 
 =head2 entrytitles
@@ -276,20 +298,19 @@ list of comment IDs, {ascending=>1} to return an ascending list or
 
 sub entrytitles {
     my $self = shift;
-    my $hash = shift;
-    my ($key,$sorter) = ('_titles_thd',sub{-1});	# threaded
-    ($key,$sorter) = ('_titles_asc',\&_ascender)	if(defined $hash && $hash->{ascending});
-    ($key,$sorter) = ('_titles_dsc',\&_descender)	if(defined $hash && $hash->{descending});
+    my %hash = @_;
+    my ($key,$sorter) = ('_titles_thd',sub{-1});	    # threaded
+       ($key,$sorter) = ('_titles_asc',\&_ascender)     if($hash{ascending});
+       ($key,$sorter) = ('_titles_dsc',\&_descender)	if($hash{descending});
 
     $self->{$key} ||= do {
         my %entries = $self->entryhash;
         my @titles;
+        foreach (sort $sorter keys %entries) { push @titles, $entries{$_}->subject; }
+        \@titles;
+    };
 
-        foreach (sort $sorter keys %entries) {
-            $titles[$#titles+1] = $entries{$_}->subject;
-        }
-        return @titles;
-    }
+    return $self->{$key} ? @{$self->{$key}} : ();
 }
 
 =head2 entry
@@ -299,21 +320,29 @@ Returns the text of an entry, given an entry ID
 =cut
 
 sub entry {
-    my $self = shift;
-    my $id   = shift;
+    my $self   = shift;
+    my $eid    = shift;
+    my $author = $self->user;
 
     my $entry = WWW::UsePerl::Journal::Entry->new(
-        j     => $self,
-        id    => $id,
+        j      => $self,
+        author => $author,
+        eid    => $eid,
     );
 
-    return undef    unless($entry);
-    return $entry->content;
+    return unless($entry);
+    return $entry;
 }
 
 =head2 entrytitled
 
-Returns the text of an entry, given an entry title
+Returns an entry object given an entry title. To obtain the entry details use
+the underlying object methods:
+
+  my $e = $j->entrytitled('My Journal');
+  my $eid     = $e->id;
+  my $title   = $e->title;
+  my $content = $e->content;
 
 =cut
 
@@ -322,11 +351,11 @@ sub entrytitled {
     my $title   = shift;
     my %entries = $self->entryhash;
 
-    foreach (keys %entries) {
+    for(keys %entries) {
         next unless $entries{$_}->subject =~ /$title/ism;
         return $self->entry($_);
     }
-    carp "$title does not exist";
+    return $self->error("$title does not exist");
 }
 
 =head2 refresh
@@ -356,10 +385,11 @@ Required before posting can occur, takes the password.
 sub login {
     my ($self, $pass) = (@_);
     my $user  = $self->user;
-    return WWW::UsePerl::Journal::Post->new({
+    return WWW::UsePerl::Journal::Post->new(
+        j        => $self,
         username => $user,
         password => $pass
-    });
+    );
 }
 
 # sort methods
@@ -372,11 +402,15 @@ __END__
 
 =head1 TODO
 
-Better error checking and test suite.
+=over
 
-Comment retrieval.
+=item * Better error checking and test suite.
 
-Writing activities (modify, delete ...)
+=item * Comment retrieval - see L<WWW-UsePerl-Journal-Thread>
+
+=item * Writing activities (modify, delete ...)
+
+=back
 
 =head1 CAVEATS
 
@@ -385,32 +419,36 @@ They're still objects, they just happen to look the same as before when
 you're printing them. Use -E<gt>content instead.
 
 The time on a journal entry is the localtime of the user that created the 
-journal entry. If you aren't in the same timezone, that time will be wrong.
-
-=head1 BUGS, PATCHES & FIXES
-
-There are no known bugs at the time of this release. However, if you spot a
-bug or are experiencing difficulties, that is not explained within the POD
-documentation, please send an email to barbie@cpan.org or submit a bug to the
-RT system (http://rt.cpan.org/). However, it would help greatly if you are 
-able to pinpoint problems or even supply a patch. 
-
-Fixes are dependant upon their severity and my availablity. Should a fix not
-be forthcoming, please feel free to (politely) remind me.
+journal entry. If you aren't in the same timezone, that time can appear an
+hour out.
 
 =head1 SEE ALSO
 
-F<http://use.perl.org/>
-
+F<http://use.perl.org/>,
 F<LWP>
+
+=head1 SUPPORT
+
+There are no known bugs at the time of this release. However, if you spot a
+bug or are experiencing difficulties that are not explained within the POD
+documentation, please submit a bug to the RT system (see link below). However,
+it would help greatly if you are able to pinpoint problems or even supply a 
+patch. 
+
+Fixes are dependant upon their severity and my availablity. Should a fix not
+be forthcoming, please feel free to (politely) remind me by sending an email
+to barbie@cpan.org .
+
+RT: L<http://rt.cpan.org/Public/Dist/Display.html?Name=WWW-UsePerl-Journal>
 
 =head1 AUTHOR
 
-Original author was Russell Matbouli 
-E<lt>www-useperl-journal-spam@russell.matbouli.orgE<gt>, 
-F<http://russell.matbouli.org/>
+  Original author: Russell Matbouli 
+  <www-useperl-journal-spam@russell.matbouli.org>, 
+  <http://russell.matbouli.org/>
 
-Current maintainer is Barbie <barbie@cpan.org>.
+  Current maintainer: Barbie, <barbie@cpan.org>
+  for Miss Barbell Productions <http://www.missbarbell.co.uk>.
 
 =head1 CONTRIBUTORS
 
@@ -421,10 +459,14 @@ scripts.
 =head1 COPYRIGHT AND LICENSE
 
   Copyright (C) 2002-2004 Russell Matbouli.
-  Copyright (C) 2005      Barbie for Miss Barbell Productions.
-  All Rights Reserved.
+  Copyright (C) 2005-2007 Barbie for Miss Barbell Productions.
 
-  Distributed under GPL v2. See F<COPYING> included with this distibution.
+  This module is free software; you can redistribute it and/or 
+  modify it under the same terms as Perl itself.
+
+The full text of the licenses can be found in the F<Artistic> and
+F<COPYING> files included with this module, or in L<perlartistic> and
+L<perlgpl> in Perl 5.8.1 or later.
 
 =cut
 

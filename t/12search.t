@@ -2,30 +2,39 @@
 use strict;
 
 use Data::Dumper;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use WWW::UsePerl::Journal;
 
 my $username = 'koschei';
 my $j = WWW::UsePerl::Journal->new($username);
 isa_ok($j, "WWW::UsePerl::Journal");
 
-my $UID = $j->uid();
-is($UID, 147, "uid");
+my $uid = $j->uid();
+is($uid, 147, "uid");
 
 my @entries = $j->recentarray;
 isnt(scalar(@entries), 0, "recentarray");
+# check caching
+my @cache = $j->recentarray;
+is_deeply(\@cache,\@entries, "cached recentarray");
 
 my $content = $j->_journalsearch_content; # white box testing
-my @users;
+my @authors;
 while ($content =~ m#/~(\w+)/journal/\d+#g) {
-    push @users, $1;
+    push @authors, $1;
 }
+@authors = sort @authors;
 
-my @entry_users = map { $_->user } @entries;
-is_deeply(\@entry_users, \@users, "...consistency check");
+my @entry_authors = sort map { $_->author } @entries;
+
+#use Data::Dumper;
+#print "\n# entry_authors=".Dumper(\@entry_authors);
+#print "\n# entries=".Dumper(\@entries);
+
+is_deeply(\@entry_authors, \@authors, "...consistency check");
 
 $username = 'nosuchuser';
 my $k = WWW::UsePerl::Journal->new($username);
-$UID = $k->uid();
-is($UID, undef, "bad uid");
+$uid = $k->uid();
+is($uid, undef, "bad uid");
 

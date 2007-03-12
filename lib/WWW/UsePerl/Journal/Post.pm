@@ -1,6 +1,9 @@
 package WWW::UsePerl::Journal::Post;
 
-our $VERSION = '0.14';
+use strict;
+use warnings;
+
+our $VERSION = '0.15';
 
 #----------------------------------------------------------------------------
 
@@ -8,41 +11,53 @@ our $VERSION = '0.14';
 
 WWW::UsePerl::Journal::Post - use.perl.org journal post tool
 
+=head1 DESCRIPTION
+
+Allows users to post a use.perl entry to their journal.
+
 =head1 SYNOPSIS
+
+Note that this module is not meant to be called directly. You should access the
+undelying object as follows:
+
+  use WWW::UsePerl::Journal;
+  my $j = WWW::UsePerl::Journal->new($user);
+  my $p = $j->login($pass);
+
+However, you can access the object directly as follows:
+
+  use WWW::UsePerl::Journal;
+  my $j = WWW::UsePerl::Journal->new($user);
 
   use WWW::UsePerl::Journal::Post;
   my $post = WWW::UsePerl::Journal::Post->new(
+    j        => $j,
     username => $user,
     password => $pass
   );
 
   # basic post using defaults
-  $post->postentry(title => 'title', text => 'text');
+  my $success = $post->postentry(title => 'title', text => 'text');
   
   # post entry overriding defaults
-  $post->postentry(
+  $success = $post->postentry(
     title    => 'title',
     text     => 'text',
     topic    => 34,
     comments => 1,
     type     => 1
+    promote  => 'publish',
   );
 
   # delete an entry you don't want
   # WARNING: this is permanent!
-  $post->deleteentry($eid);
-
-=head1 DESCRIPTION
-
-Allows users to post a use.perl entry to their journal.
+  $success = $post->deleteentry($eid);
+  if(!$success) { $
 
 =cut
 
 # -------------------------------------
 # Library Modules
-
-use strict;
-use warnings;
 
 use LWP::UserAgent;
 use HTTP::Cookies;
@@ -55,9 +70,10 @@ use Carp;
 use constant UP_URL => 'http://use.perl.org';
 
 my %postdefaults = (
-    topic     => 34,
-    comments  => 1,
-    type      => 1,
+    topic    => 34,
+    comments => 1,
+    type     => 1,
+    promote  => 'publish',
 );
 
 # -------------------------------------
@@ -73,19 +89,19 @@ Creates an instance for the specified user.
 
 sub new {
     my $class = shift;
-    my $hash  = shift;
+    my %hash  = @_;
 
-    for(qw/username password/) {
-    	return undef	unless($hash->{$_});
+    for(qw/j username password/) {
+    	return	unless($hash{$_});
     }
 
     my $ua    = LWP::UserAgent->new(env_proxy => 1);
     $ua->cookie_jar(HTTP::Cookies->new());
 
-    $hash->{ua} = $ua;
+    $hash{ua} = $ua;
 
-    my $self  = bless { %$hash }, $class;
-    return undef	unless($self->login);
+    my $self  = bless { %hash }, $class;
+    return	unless($self->login);
     return $self;
 }
 
@@ -108,7 +124,7 @@ sub login {
         )->content;
 
 #    print STDERR "\n#login=\n$login\n";
-    return undef	if($login =~ /Forget your password/);
+    return	if($login =~ /Forget your password/);
     return 1;
 }
 
@@ -126,66 +142,54 @@ sub postentry {
 
     # Validate parameters
     for (qw/text title/) {
-        return $self->_posterror("missing $_ field from postentry") unless exists $params{$_}
+        return $self->{j}->error("missing $_ field from postentry") 
+            unless exists $params{$_};
     }
 
     %params = (%postdefaults, %params);
     $params{comments} = $params{comments} ? 'enabled' : 'disabled';
 
-    return $self->_posterror("Invalid post type.\n")		
+    return $self->{j}->error("Invalid post type.")		
         if ($params{type}  =~ /[^\d]/ || $params{type}  <  1 || 
                                          $params{type}  >  4);
-    return $self->_posterror("Invalid journal topic.\n")	
-        if ($params{topic} =~ /[^\d]/ || $params{topic} <  1 || 
-                                         $params{topic} > 37 || 
-                                         $params{topic} == 16);
-    return $self->_posterror("Subject too long.\n")		
+    return $self->{j}->error("Invalid journal topic.")	
+        if ($params{topic} =~ /[^\d]/ || $params{topic} <  1  || 
+                                         $params{topic} == 16 ||
+                                         ($params{topic} > 37 && $params{topic} != 44));
+    return $self->{j}->error("Invalid promotion type.")		
+        if ($params{promote} !~ /(publish|publicize|post)/);
+    return $self->{j}->error("Subject too long.")		
         if (length($params{title}) > 60);
 
     # Post posting
     my $editwindow =
         $self->{ua}->request(
         GET UP_URL . '/journal.pl?op=edit')->content;
-    return $self->_posterror("Can't get an editwindow") unless $editwindow;
+    return $self->{j}->error("Can't get an editwindow") unless $editwindow;
 
-    my ($formkey) = ($editwindow =~ m/formkey"\s+VALUE="([^"]+)"/ism);
-    return $self->_posterror("No formkey!") unless defined $formkey;
+    my ($formkey) = ($editwindow =~ m/reskey"\s+value="([^"]+)"/ism);
+    return $self->{j}->error("No formkey!") unless defined $formkey;
+
+#promotetype" value="publish|publicize|post
 
     my %data = (
         id              => '',
         state           => 'editing',
         preview         => 'active',
-        formkey         => $formkey,
+        reskey          => $formkey,
         description     => $params{title},
         tid             => $params{topic},
         journal_discuss => $params{comments},
         article         => $params{text},
         posttype        => $params{type},
+        promotetype     => $params{promote},
         op              => 'save',
     );
 
     my $post = $self->{ua}->request(POST UP_URL . '/journal.pl', \%data);
-    return $self->_posterror("Failed LWP POST request") unless $post->is_success;
+    return $self->{j}->error("Failed LWP POST request") unless $post->is_success;
     return 1;
 }
-
-sub _posterror {
-    my ($self,$text) = @_;
-    $self->{posterror} = $text;
-    return 0;
-}
-
-=head2 posterror
-
-Returns the error string when a postentry fails (returns 0).
-
-=cut
-
-sub posterror {
-    my $self = shift;
-    $self->{posterror};
-}
-
 
 =head2 deleteentry
 
@@ -203,28 +207,42 @@ sub deleteentry {
     my $content =
         $self->{ua}->request(
         GET UP_URL . '/journal.pl?op=removemeta&id=' . $eid)->content;
-    return $self->_posterror("No response for deletion") unless $content;
+    return $self->{j}->error("No response for deletion") unless $content;
 
-    $content =
-        $self->{ua}->request(
-        GET UP_URL . '/journal.pl?op=remove&del_' . $eid . '=1')->content;
-    return $self->_posterror("No response for deletion") unless $content;
+    my ($formkey) = ($content =~ m/reskey"\s+value="([^"]+)"/ism);
+    return $self->{j}->error("Unable to delete entry.") unless defined $formkey;
 
+    my %data = (
+        reskey => $formkey,
+        op     => 'remove',
+    );
+    $data{'del_'.$eid} = 1;
+
+    my $post = $self->{ua}->request(POST UP_URL . '/journal.pl', \%data);
+    return $self->{j}->error("No response for deletion") unless $post->is_success;
+
+#    $content = $post->content;
 #    print STDERR "\n#content=\n$content\n";
+#    return $self->{j}->error("Jounal entries found!") unless($content =~ /You have not created any journal entries.|Sorry, the requested journal entries were not found./);
+
+    return 1;
 }
 
 1;
 __END__
 
-=head1 BUGS, PATCHES & FIXES
+=head1 SUPPORT
 
-If you spot a bug or are experiencing difficulties, that is not explained 
-within the POD documentation, please send an email to barbie@cpan.org or 
-submit a bug to the RT system (http://rt.cpan.org/). However, it would help 
-greatly if you are able to pinpoint problems or even supply a patch. 
+If you spot a bug or are experiencing difficulties that are not explained 
+within the POD documentation, please submit a bug to the RT system (see link 
+below). However, it would help greatly if you are able to pinpoint problems or 
+even supply a patch. 
 
 Fixes are dependant upon their severity and my availablity. Should a fix not
-be forthcoming, please feel free to (politely) remind me.
+be forthcoming, please feel free to (politely) remind me by sending an email
+to barbie@cpan.org .
+
+RT: L<http://rt.cpan.org/Public/Dist/Display.html?Name=WWW-UsePerl-Journal>
 
 =head2 Known Bugs
 
@@ -245,14 +263,18 @@ F<http://use.perl.org/>
 
 =head1 AUTHOR
 
-Barbie <barbie@cpan.org>, F<http://birmingham.pm.org>
+  Barbie, <barbie@cpan.org>
+  for Miss Barbell Productions <http://www.missbarbell.co.uk>.
 
 =head1 COPYRIGHT AND LICENSE
 
-  Copyright (C) 2005      Barbie for Miss Barbell Productions.
-  All Rights Reserved.
+  Copyright (C) 2003-2007 Barbie for Miss Barbell Productions.
 
-  Distributed under GPL v2. See F<COPYING> included with this distibution.
+  This module is free software; you can redistribute it and/or 
+  modify it under the same terms as Perl itself.
+
+The full text of the licenses can be found in the F<Artistic> and
+F<COPYING> files included with this module, or in L<perlartistic> and
+L<perlgpl> in Perl 5.8.1 or later.
 
 =cut
-

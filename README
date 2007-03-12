@@ -11,10 +11,9 @@ DEPENDENCIES
 
 The distribution requires the following modules:
 
-  LWP::UserAgent        => 0,
-  Time::Piece           => 1.07,
-  Test::Simple          => 0.40,
-  Test::More            => 0,
+  LWP::UserAgent        => 0
+  Time::Piece           => 1.07
+  Test::More            => 0.47
 
 CHANGES
 
@@ -29,6 +28,20 @@ To install this module type the following:
    make test
    make install
 
+SUPPORT
+
+There are no known bugs at the time of this release. However, if you spot a
+bug or are experiencing difficulties that are not explained within the POD
+documentation, please submit a bug to the RT system (see link below). However,
+it would help greatly if you are able to pinpoint problems or even supply a 
+patch. 
+
+Fixes are dependant upon their severity and my availablity. Should a fix not
+be forthcoming, please feel free to (politely) remind me by sending an email
+to barbie@cpan.org .
+
+RT: http://rt.cpan.org/Public/Dist/Display.html?Name=WWW-UsePerl-Journal
+
 AUTHOR
 
 Original author was Russell Matbouli 
@@ -37,11 +50,10 @@ Original author was Russell Matbouli
 
 Current maintainer is Barbie <barbie@cpan.org>.
 
-COPYRIGHT AND LICENCE
+COPYRIGHT AND LICENSE
 
 Copyright (C) 2002-2004 Russell Matbouli.
 Copyright (C) 2005      Barbie for Miss Barbell Productions.
-All Rights Reserved.
 
 Distributed under GPL v2. See COPYING included with this distibution.
 
