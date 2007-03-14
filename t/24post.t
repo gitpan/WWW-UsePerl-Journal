@@ -74,7 +74,7 @@ SKIP: {
 
     # use defaults
     $res = $p->postentry(title => $title, text => $text);
-    is($res,1,'... posted');
+    is($res,1,'posted');
     if(!$res) { print STDERR "\n# post error: ".($j->error)."\n"; }
     
     # is it in the cached version?
@@ -91,7 +91,7 @@ SKIP: {
 
     # can we delete the new entry?
     $res = $p->deleteentry($e->eid);
-    is($res,1,'... deleted');
+    is($res,1,'deleted');
     $j->refresh();
     $e = $j->entrytitled($title);
     is($e, undef, '... deleted entry' );

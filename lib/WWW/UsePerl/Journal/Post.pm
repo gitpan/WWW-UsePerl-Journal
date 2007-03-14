@@ -3,7 +3,7 @@ package WWW::UsePerl::Journal::Post;
 use strict;
 use warnings;
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 #----------------------------------------------------------------------------
 
@@ -221,9 +221,14 @@ sub deleteentry {
     my $post = $self->{ua}->request(POST UP_URL . '/journal.pl', \%data);
     return $self->{j}->error("No response for deletion") unless $post->is_success;
 
+    # Note:
+    # I was trying to verify that an entry was deleted, but the code below
+    # results in the entry coming back!
+
 #    $content = $post->content;
 #    print STDERR "\n#content=\n$content\n";
-#    return $self->{j}->error("Jounal entries found!") unless($content =~ /You have not created any journal entries.|Sorry, the requested journal entries were not found./);
+#    return $self->{j}->error("Jounal entries found!") 
+#        unless($content =~ /You have not created any journal entries.|Sorry, the requested journal entries were not found./);
 
     return 1;
 }

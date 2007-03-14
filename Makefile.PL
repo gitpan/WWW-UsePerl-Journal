@@ -6,7 +6,7 @@ WriteMakefile(
     'PREREQ_PM'		=> { 
 		LWP::UserAgent => 0,
 		Time::Piece    => 1.07,
-		Test::More     => 0.47,
+		Test::More     => 0.67,
 	},
 	NO_META			=> 1,
 
