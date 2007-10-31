@@ -4,62 +4,89 @@ use strict;
 use Test::More tests => 20;
 use WWW::UsePerl::Journal;
 
-my $username = "russell";
-my $j = WWW::UsePerl::Journal->new($username);
-isa_ok($j, "WWW::UsePerl::Journal");
+{
+    my $username = 'russell';
+    my $j = WWW::UsePerl::Journal->new($username);
+    isa_ok($j, 'WWW::UsePerl::Journal');
 
-my $UID = $j->uid();
-is($UID, 1413, "uid");
+    my $uid = $j->uid();
 
-my %entries = $j->entryhash;
-isnt(scalar %entries, 0, "entryhash");
-my %cache = $j->entryhash;
-is_deeply(\%cache,\%entries, "cached entryhash");
+    SKIP: {
+        skip 'WUJERR:' . $j->error(), 16    unless($uid);
+        is($uid, 1413, 'uid');
 
-# check entry ids
-my @ids = $j->entryids;
-isnt(scalar @ids, 0, "entryids");
-   @ids = sort {$a <=> $b} @ids;
-my @asc = $j->entryids(ascending  => 1);
-my @des = $j->entryids(descending => 1);
-my @rev = reverse @des;
-is_deeply(\@asc,\@ids,'ascending entryids');
-is_deeply(\@rev,\@ids,'descending entryids');
+        my %entries = $j->entryhash;
+        isnt(scalar(keys %entries), 0, 'entryhash');
+        if(scalar(keys %entries) == 0) {
+            print STDERR "\n#WUJERR:" . $j->error;
+        }
+        my %cache = $j->entryhash;
+        is_deeply(\%cache,\%entries, 'cached entryhash');
 
-# check caching
-my @c_ids = $j->entryids;
-my @c_asc = $j->entryids(ascending  => 1);
-my @c_des = $j->entryids(descending => 1);
-is_deeply(\@c_ids,\@c_ids,'cached threaded entryids');
-is_deeply(\@c_asc,\@asc,'cached ascending entryids');
-is_deeply(\@c_des,\@des,'cached descending entryids');
+        # check entry ids
+        my @ids = $j->entryids;
+        isnt(scalar(@ids), 0, 'entryids');
+        if(scalar(@ids) == 0) {
+            print STDERR "\n#WUJERR:" . $j->error;
+        }
 
-# check entry titles
-my @titles = $j->entrytitles;
-isnt(scalar @titles, 0, "entrytitles");
-@asc = $j->entrytitles(ascending  => 1);
-@des = $j->entrytitles(descending => 1);
-@rev = reverse @des;
-is_deeply(\@rev,\@asc,'ordered entrytitles');
+           @ids = sort {$a <=> $b} @ids;
+        my @asc = $j->entryids(ascending  => 1);
+        my @des = $j->entryids(descending => 1);
+        my @rev = reverse @des;
+        is_deeply(\@asc,\@ids,'ascending entryids');
+        is_deeply(\@rev,\@ids,'descending entryids');
 
-# check caching
-my @c_titles = $j->entrytitles;
-@c_asc = $j->entrytitles(ascending  => 1);
-@c_des = $j->entrytitles(descending => 1);
-is_deeply(\@c_titles,\@titles,'cached threaded entrytitles');
-is_deeply(\@c_asc,\@asc,'cached ascending entrytitles');
-is_deeply(\@c_des,\@des,'cached descending entrytitles');
+        # check caching
+        my @c_ids = $j->entryids;
+        my @c_asc = $j->entryids(ascending  => 1);
+        my @c_des = $j->entryids(descending => 1);
+        is_deeply(\@c_ids,\@c_ids,'cached threaded entryids');
+        is_deeply(\@c_asc,\@asc,'cached ascending entryids');
+        is_deeply(\@c_des,\@des,'cached descending entryids');
 
-my $text = 'I read in <a href="~hfb/journal/" rel="nofollow">hfb\'s journal</a> that there was no module for testing whether something was a pangram. There is now.';
-my $content = $j->entry('2340')->content;
-cmp_ok($content, 'eq', $text, 'entry compare' );
-$content = $j->entrytitled('Lingua::Pangram')->content;
-cmp_ok($content, 'eq', $text, 'entrytitled compare' );
+        # check entry titles
+        my @titles = $j->entrytitles;
+        isnt(scalar @titles, 0, 'entrytitles');
+        if(scalar(@titles) == 0) {
+            print STDERR "\n#WUJERR:" . $j->error;
+        }
+        @asc = $j->entrytitles(ascending  => 1);
+        @des = $j->entrytitles(descending => 1);
+        @rev = reverse @des;
+        is_deeply(\@rev,\@asc,'ordered entrytitles');
 
-my $k = WWW::UsePerl::Journal->new(1662);
-cmp_ok($k->user, 'eq', 'richardc', "username from uid");
+        # check caching
+        my @c_titles = $j->entrytitles;
+        @c_asc = $j->entrytitles(ascending  => 1);
+        @c_des = $j->entrytitles(descending => 1);
+        is_deeply(\@c_titles,\@titles,'cached threaded entrytitles');
+        is_deeply(\@c_asc,\@asc,'cached ascending entrytitles');
+        is_deeply(\@c_des,\@des,'cached descending entrytitles');
 
-$j = WWW::UsePerl::Journal->new('2shortplanks');
-%entries = eval { $j->entryhash; };
-is($@, "", "entryhash doesn't die on titles with trailing newlines");
-isnt(scalar %entries, 0, "...and has found some entries");
+        my $text = 'I read in <a href="~hfb/journal/" rel="nofollow">hfb\'s journal</a> that there was no module for testing whether something was a pangram. There is now.';
+        my $content = $j->entry('2340')->content;
+        cmp_ok($content, 'eq', $text, 'entry compare' );
+        $content = $j->entrytitled('Lingua::Pangram')->content;
+        cmp_ok($content, 'eq', $text, 'entrytitled compare' );
+    }
+}
+
+{
+    my $j = WWW::UsePerl::Journal->new(1662);
+    my $user = $j->user;
+    is($user, 'richardc', 'username from uid');
+    if($user ne 'richardc') {
+        print STDERR "\n#WUJERR:" . $j->error;
+    }
+}
+
+{
+    my $j = WWW::UsePerl::Journal->new('2shortplanks');
+    my %entries = eval { $j->entryhash; };
+    is($@, '', 'entryhash doesnt die on titles with trailing newlines');
+    isnt(scalar(keys %entries), 0, '...and has found some entries');
+    if(scalar(keys %entries) == 0) {
+        print STDERR "\n#WUJERR:" . $j->error;
+    }
+}

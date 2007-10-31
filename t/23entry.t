@@ -25,4 +25,7 @@ like($e->content, qr/^Get it from CPAN now/,     'content');
 # can we find after a refresh?
 $j->refresh;
 $e = $j->entrytitled('WWW::UsePerl::Journal');
-is($e->uid,       $userid,  'user id');
+SKIP: {
+    skip 'WUJERR:' . $j->error(), 1   unless($e);
+    is($e->uid,       $userid,  'user id');
+}

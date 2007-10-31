@@ -3,7 +3,7 @@ package WWW::UsePerl::Journal;
 use strict;
 use warnings;
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 #----------------------------------------------------------------------------
 
@@ -253,8 +253,17 @@ sub entryhash {
             );
         }
 
+        if(scalar(keys %entries) == 0) {
+            print STDERR "\n#j->entryhash: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]\n";
+            print STDERR "\n#content=[$content]\n";
+        }
+
         \%entries;
     };
+
+    if(scalar(keys %{$self->{_entryhash}}) == 0) {
+        $self->error('Cannot find entries!');
+    }
 
     return %{$self->{_entryhash}};
 }
@@ -324,14 +333,11 @@ sub entry {
     my $eid    = shift;
     my $author = $self->user;
 
-    my $entry = WWW::UsePerl::Journal::Entry->new(
+    return WWW::UsePerl::Journal::Entry->new(
         j      => $self,
         author => $author,
         eid    => $eid,
     );
-
-    return unless($entry);
-    return $entry;
 }
 
 =head2 entrytitled
