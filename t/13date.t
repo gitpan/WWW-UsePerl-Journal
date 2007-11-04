@@ -29,6 +29,7 @@ SKIP: {
         ok(1, 'Date matches.');
     } else {
         is $s => 1033030020, 'Date matches.';
+        diag($j->raw('8028'));
     }
 
     $j = WWW::UsePerl::Journal->new(1296);
@@ -42,5 +43,6 @@ SKIP: {
         ok(1, '...and gives the right date');
     } else {
         is $s => 1014637200, '...and gives the right date';
+        diag($j->raw('3107'));
     }
 }

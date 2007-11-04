@@ -3,7 +3,8 @@ package WWW::UsePerl::Journal::Post;
 use strict;
 use warnings;
 
-our $VERSION = '0.17';
+use vars qw($VERSION);
+$VERSION = '0.18';
 
 #----------------------------------------------------------------------------
 
@@ -67,7 +68,7 @@ use Carp;
 # -------------------------------------
 # Constants & Variables
 
-use constant UP_URL => 'http://use.perl.org';
+my $UP_URL = 'http://use.perl.org';
 
 my %postdefaults = (
     topic    => 34,
@@ -118,7 +119,7 @@ sub login {
 
     my $login =
         $self->{ua}->request(
-           GET UP_URL . "/users.pl?op=userlogin&" .
+           GET $UP_URL . "/users.pl?op=userlogin&" .
            "unickname=$self->{username}&" .
            "upasswd=$self->{password}"
         )->content;
@@ -164,7 +165,7 @@ sub postentry {
     # Post posting
     my $editwindow =
         $self->{ua}->request(
-        GET UP_URL . '/journal.pl?op=edit')->content;
+        GET $UP_URL . '/journal.pl?op=edit')->content;
     return $self->{j}->error("Can't get an editwindow") unless $editwindow;
 
     my ($formkey) = ($editwindow =~ m/reskey"\s+value="([^"]+)"/ism);
@@ -186,7 +187,7 @@ sub postentry {
         op              => 'save',
     );
 
-    my $post = $self->{ua}->request(POST UP_URL . '/journal.pl', \%data);
+    my $post = $self->{ua}->request(POST $UP_URL . '/journal.pl', \%data);
     return $self->{j}->error("Failed LWP POST request") unless $post->is_success;
     return 1;
 }
@@ -206,7 +207,7 @@ sub deleteentry {
 
     my $content =
         $self->{ua}->request(
-        GET UP_URL . '/journal.pl?op=removemeta&id=' . $eid)->content;
+        GET $UP_URL . '/journal.pl?op=removemeta&id=' . $eid)->content;
     return $self->{j}->error("No response for deletion") unless $content;
 
     my ($formkey) = ($content =~ m/reskey"\s+value="([^"]+)"/ism);
@@ -218,7 +219,7 @@ sub deleteentry {
     );
     $data{'del_'.$eid} = 1;
 
-    my $post = $self->{ua}->request(POST UP_URL . '/journal.pl', \%data);
+    my $post = $self->{ua}->request(POST $UP_URL . '/journal.pl', \%data);
     return $self->{j}->error("No response for deletion") unless $post->is_success;
 
     # Note:

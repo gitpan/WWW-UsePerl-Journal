@@ -17,6 +17,7 @@ t/11test.t
 t/12search.t
 t/13date.t
 t/14error.t
+t/15raw.t
 t/23entry.t
 t/24post.t
 t/90podtest.t

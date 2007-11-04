@@ -1,5 +1,12 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.18	04/11/2007
+	- changed constants to variable due to suprious errors from 
+	  Test::Pod::Coverage.
+	- added raw() functions for debugging purposes.
+	- changed date processing slightly, hopefully this finally fixes those
+	  errors. (thanks to Andreas and Slaven for the feedback)
+
 0.17	31/10/2007
 	- Still getting CPAN Tester failures :( It looks like use.perl is
 	  timing out, as it's unable to reference the test users (russell and 

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                   WWW-UsePerl-Journal
-version:                0.17
+version:                0.18
 abstract:               Handles the retrieval of UsePerl journal entries.
 author:
   - Barbie <barbie@cpan.org>
@@ -24,13 +24,13 @@ build_requires:
 provides:
   WWW::UsePerl::Journal:
     file:     lib/WWW/UsePerl/Journal.pm
-    version:  0.17
+    version:  0.18
   WWW::UsePerl::Journal::Entry:
     file:     lib/WWW/UsePerl/Journal/Entry.pm
-    version:  0.17
+    version:  0.18
   WWW::UsePerl::Journal::Post:
     file:     lib/WWW/UsePerl/Journal/Post.pm
-    version:  0.17
+    version:  0.18
 no_index:
   directory:
     - t

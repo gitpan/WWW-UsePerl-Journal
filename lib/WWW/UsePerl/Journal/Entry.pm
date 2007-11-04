@@ -3,8 +3,8 @@ package WWW::UsePerl::Journal::Entry;
 use strict;
 use warnings;
 
-use vars qw($AUTOLOAD);
-our $VERSION = '0.17';
+use vars qw($VERSION $AUTOLOAD);
+$VERSION = '0.18';
 
 #----------------------------------------------------------------------------
 
@@ -32,13 +32,28 @@ use WWW::UsePerl::Journal;
 # -------------------------------------
 # Constants & Variables
 
-use constant UP_URL => 'http://use.perl.org';
+my $UP_URL = 'http://use.perl.org';
 use overload q{""}  => sub { $_[0]->stringify() };
 
 my $UID = '
             <div \s+ class="title" \s+ id="user-info-title"> \s+ 
             <h4> \s+ (.*?) \s+ \((\d+)\) \s+ </h4> \s+ </div>
         ';
+
+my %mons = (
+	1  => 'January',
+	2  => 'February',
+	3  => 'March',
+	4  => 'April',
+	5  => 'May',
+	6  => 'June',
+	7  => 'July',
+	8  => 'August',
+	9  => 'September',
+	10 => 'October',
+	11 => 'November',
+	12 => 'December',
+);
 
 # -------------------------------------
 # The Public Interface
@@ -135,6 +150,21 @@ sub AUTOLOAD {
 	goto &$name;
 }
 
+=head2 raw
+
+For debugging purposes.
+
+=cut
+
+sub raw {
+    my $self   = shift;
+    my $eid    = $self->{eid};
+    my $author = $self->{author};
+#print STDERR "\n#raw: URL=[". $UP_URL . "/~$author/journal/$eid]";
+    return $self->{j}->{ua}->request(GET $UP_URL . "/~$author/journal/$eid")->content;
+}
+
+
 # -------------------------------------
 # The Private Subs
 
@@ -151,9 +181,9 @@ sub _get_content {
 
     return $self->{j}->error("author missing")  unless($author);
 
-    my $content = $self->{j}->{ua}->request(GET UP_URL . "/~$author/journal/$eid")->content;
+    my $content = $self->{j}->{ua}->request(GET $UP_URL . "/~$author/journal/$eid")->content;
 
-#print STDERR "\n#e->_get_content: URL=[". UP_URL . "/~$author/journal/$eid]";
+#print STDERR "\n#e->_get_content: URL=[". $UP_URL . "/~$author/journal/$eid]";
 #print STDERR "\n#content=[$content]\n";
 
     return $self->{j}->error("error getting entry") unless $content;
@@ -174,17 +204,20 @@ sub _get_content {
         !six;
 
     # date/time fields
-    my ($month, $day, $year) = $content =~ m!
-        <div \s+ class="journaldate">\w+ \s+ (\w+) \s+ (\d+), \s+ (\d+)</div>
-        !six;
-    my ($hr, $mi, $amp) = $content =~ m!
+    my ($month, $day, $year, $hr, $mi, $amp) = $content =~ m!
+        <div \s+ class="journaldate">\w+ \s+ (\w+) \s+ (\d+), \s+ (\d+)</div> .*?
         <div \s+ class="details">(\d+):(\d+) \s+ ([AP]M)</div>
         !six;
+    
+    unless($month && $day && $year) {
+        (undef,$mi,$hr,$day,$month,$year) = localtime(time());
+        $month = $mons{$month};
+    }
 
     # just in case we can't get the time
     if($hr && $mi && $amp) {
-        $hr += 12 if ($amp eq 'PM');
-        $hr = 0 if $hr == 24;
+        $hr += 12 if($amp eq 'PM');
+        $hr = 0   if($hr == 24);
     } else {
         $hr ||= 0;
         $mi ||= 0;
@@ -194,11 +227,10 @@ sub _get_content {
         "$month $day $year ${hr}:$mi",
         '%B %d %Y %H:%M'
     );
+
     #$self->{date} += 4*ONE_HOUR; # correct TZ?
 
-    $content =~ m! 
-        <div \s+ class="intro">\s*(.*?)\s*</div>
-    !six;
+    $content =~ m! <div \s+ class="intro">\s*(.*?)\s*</div> !six;
     $self->{content} = $1;
 }
 

@@ -3,7 +3,8 @@ package WWW::UsePerl::Journal;
 use strict;
 use warnings;
 
-our $VERSION = '0.17';
+use vars qw($VERSION);
+$VERSION = '0.18';
 
 #----------------------------------------------------------------------------
 
@@ -41,7 +42,7 @@ use WWW::UsePerl::Journal::Post;
 # -------------------------------------
 # Constants & Variables
 
-use constant UP_URL => 'http://use.perl.org';
+my $UP_URL = 'http://use.perl.org';
 
 
 # Regular Expressions for Journal Entries
@@ -135,10 +136,10 @@ sub user {
     my $self = shift;
     $self->{_user} ||= do {
         my $uid = $self->uid;
-        my $content = $self->{ua}->request(GET UP_URL . "/journal.pl?op=list&uid=$uid")->content;
-        return $self->error("Cannot connect to " . UP_URL)  unless ($content);
+        my $content = $self->{ua}->request(GET $UP_URL . "/journal.pl?op=list&uid=$uid")->content;
+        return $self->error("Cannot connect to " . $UP_URL)  unless ($content);
 
-#print STDERR "\n#j->user: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]\n";
+#print STDERR "\n#j->user: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n";
 #print STDERR "\n#content=[$content]\n";
 
         $content =~ m!$USER!six or return $self->error("Cannot obtain username.");
@@ -157,10 +158,10 @@ sub uid {
     my $self = shift;
     $self->{_uid} ||= do {
         my $user = $self->user;
-        my $content = $self->{ua}->request(GET UP_URL . "/~$user/")->content;
-        return $self->error( "Cannot connect to " . UP_URL )    unless $content;
+        my $content = $self->{ua}->request(GET $UP_URL . "/~$user/")->content;
+        return $self->error( "Cannot connect to " . $UP_URL )    unless $content;
 
-#print STDERR "\n#j->uid: URL=[". UP_URL . "/~$user/]\n";
+#print STDERR "\n#j->uid: URL=[". $UP_URL . "/~$user/]\n";
 #print STDERR "\n#content=[$content]\n";
 
         $content =~ m!$UID!six or return $self->error("Cannot obtain userid.");
@@ -209,8 +210,8 @@ sub recentarray {
 # Split out from recentarray method to make consistency testing easier.
 sub _journalsearch_content {
     my $self = shift;
-    my $content = $self->{ua}->request( GET UP_URL . "/search.pl?op=journals")->content;
-    return $self->error("Cannot connect to " . UP_URL . "/search.pl?op=journals")  unless ($content);
+    my $content = $self->{ua}->request( GET $UP_URL . "/search.pl?op=journals")->content;
+    return $self->error("Cannot connect to " . $UP_URL . "/search.pl?op=journals")  unless ($content);
 
     $content =~ s/^.*\Q<div class="journalsearch">//sm;
     $content =~ s/<div class="pagination">.*$//sm;
@@ -231,12 +232,12 @@ sub entryhash {
         my $user = $self->user || '';
         return $self->error("Could not retrieve user details ($uid,$user)") unless $uid && $user;
 
-        my $content = $self->{ua}->request(GET UP_URL . "/journal.pl?op=list&uid=$uid")->content;
+        my $content = $self->{ua}->request(GET $UP_URL . "/journal.pl?op=list&uid=$uid")->content;
         return $self->error("Could not create entry list") unless $content;
 
         my %entries;
 
-#print STDERR "\n#j->entryhash: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]\n";
+#print STDERR "\n#j->entryhash: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n";
 #print STDERR "\n#content=[$content]\n";
 
         while ( $content =~ m!$ENTRYLIST!igxs ) {
@@ -254,7 +255,7 @@ sub entryhash {
         }
 
         if(scalar(keys %entries) == 0) {
-            print STDERR "\n#j->entryhash: URL=[". UP_URL . "/journal.pl?op=list&uid=$uid]\n";
+            print STDERR "\n#j->entryhash: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n";
             print STDERR "\n#content=[$content]\n";
         }
 
@@ -378,6 +379,26 @@ sub refresh {
         for(   '_recentarray','_entryhash',
                '_titles_thd','_titles_asc','_titles_dsc',
                '_entryids_thd','_entryids_asc','_entryids_dsc');
+}
+
+=head2 raw
+
+For debugging purposes.
+
+=cut
+
+sub raw {
+    my $self   = shift;
+    my $eid    = shift;
+    my $author = $self->user;
+
+    my $e = WWW::UsePerl::Journal::Entry->new(
+        j      => $self,
+        author => $author,
+        eid    => $eid,
+    );
+
+    return $e->raw();
 }
 
 =head2 login
