@@ -8,10 +8,10 @@ use WWW::UsePerl::Journal::Post;
 my $username = 'russell';
 my $password = '';
 
-    my $j = WWW::UsePerl::Journal->new($username);
-    isa_ok($j,'WWW::UsePerl::Journal','Login User');
-    my $p = $j->login('badpassword');
-    is($p,undef,'... bad login');
+my $j = WWW::UsePerl::Journal->new($username);
+isa_ok($j,'WWW::UsePerl::Journal','Login User');
+my $p = $j->login('badpassword');
+is($p,undef,'... bad login');
 
 # NOTE:
 # these tests are currently disabled as I do not want a test account getting

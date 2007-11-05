@@ -1,33 +1,39 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 20;
+use Test::More tests => 21;
 use WWW::UsePerl::Journal;
 
+my $username = "russell";
+my $entryid  = 2376;
+my $userid   = 1413;
+
 {
-    my $username = 'russell';
     my $j = WWW::UsePerl::Journal->new($username);
     isa_ok($j, 'WWW::UsePerl::Journal');
 
     my $uid = $j->uid();
 
     SKIP: {
-        skip 'WUJERR:' . $j->error(), 16    unless($uid);
-        is($uid, 1413, 'uid');
+        skip 'WUJERR:' . $j->error(), 17    unless($uid);
+        is($uid, $userid, 'uid');
 
         my %entries = $j->entryhash;
         isnt(scalar(keys %entries), 0, 'entryhash');
         if(scalar(keys %entries) == 0) {
-            print STDERR "\n#WUJERR:" . $j->error;
+            diag("url=[http://use.perl.org/~$username/]");
+            diag("WUJERR: " . $j->error);
         }
         my %cache = $j->entryhash;
-        is_deeply(\%cache,\%entries, 'cached entryhash');
+        is(scalar(keys %cache),scalar(keys %entries), 'matching cached/entryhash count');
+        is_deeply(\%cache,\%entries, 'matching cached/entryhash values');
 
         # check entry ids
         my @ids = $j->entryids;
         isnt(scalar(@ids), 0, 'entryids');
         if(scalar(@ids) == 0) {
-            print STDERR "\n#WUJERR:" . $j->error;
+            diag("url=[http://use.perl.org/~$username/]");
+            diag("WUJERR: " . $j->error);
         }
 
            @ids = sort {$a <=> $b} @ids;
@@ -49,7 +55,8 @@ use WWW::UsePerl::Journal;
         my @titles = $j->entrytitles;
         isnt(scalar @titles, 0, 'entrytitles');
         if(scalar(@titles) == 0) {
-            print STDERR "\n#WUJERR:" . $j->error;
+            diag("url=[http://use.perl.org/~$username/]");
+            diag("WUJERR: " . $j->error);
         }
         @asc = $j->entrytitles(ascending  => 1);
         @des = $j->entrytitles(descending => 1);
@@ -77,7 +84,8 @@ use WWW::UsePerl::Journal;
     my $user = $j->user;
     is($user, 'richardc', 'username from uid');
     if($user ne 'richardc') {
-        print STDERR "\n#WUJERR:" . $j->error;
+        diag("url=[http://use.perl.org//journal.pl?op=list&uid=1662]");
+        diag("WUJERR: " . $j->error);
     }
 }
 
@@ -87,6 +95,7 @@ use WWW::UsePerl::Journal;
     is($@, '', 'entryhash doesnt die on titles with trailing newlines');
     isnt(scalar(keys %entries), 0, '...and has found some entries');
     if(scalar(keys %entries) == 0) {
-        print STDERR "\n#WUJERR:" . $j->error;
+        diag("url=[http://use.perl.org/~2shortplanks/]");
+        diag("WUJERR: " . $j->error);
     }
 }

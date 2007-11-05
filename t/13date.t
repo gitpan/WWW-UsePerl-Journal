@@ -19,7 +19,7 @@ isa_ok($j, 'WWW::UsePerl::Journal');
 my $e = $j->entry('8028');
 
 SKIP: {
-    skip 'WUJERR:' . $j->error(), 4   unless($e);
+    skip 'WUJERR: ' . $j->error(), 4   unless($e);
 
     isa_ok($e, 'WWW::UsePerl::Journal::Entry');
 
@@ -29,6 +29,7 @@ SKIP: {
         ok(1, 'Date matches.');
     } else {
         is $s => 1033030020, 'Date matches.';
+        diag("url=[http://use.perl.org/147/journal/8028]");
         diag($j->raw('8028'));
     }
 
@@ -43,6 +44,7 @@ SKIP: {
         ok(1, '...and gives the right date');
     } else {
         is $s => 1014637200, '...and gives the right date';
+        diag("url=[http://use.perl.org/1296/journal/3107]");
         diag($j->raw('3107'));
     }
 }

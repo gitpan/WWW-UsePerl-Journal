@@ -1,5 +1,14 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.19	current
+	- fixed user names with other characters in aside from \w.
+	- rewrote the the recent list testing, as posts can appear between
+	  extracts.
+	- missing entries can have to 2 different error messages, depending
+	  upon context.
+	- added futher diagnostics in the event of errors.
+	- reversed login checks, now assumes failure unless validated.
+
 0.18	04/11/2007
 	- changed constants to variable due to suprious errors from 
 	  Test::Pod::Coverage.

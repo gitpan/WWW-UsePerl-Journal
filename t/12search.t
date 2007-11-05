@@ -10,28 +10,28 @@ my $j = WWW::UsePerl::Journal->new($username);
 isa_ok($j, "WWW::UsePerl::Journal");
 
 my $uid = $j->uid();
-is($uid, 147, "uid");
+if($uid) {
+    is($uid, 147, "uid");
 
-my @entries = $j->recentarray;
-isnt(scalar(@entries), 0, "recentarray");
-# check caching
-my @cache = $j->recentarray;
-is_deeply(\@cache,\@entries, "cached recentarray");
+    # validate recent entries
+    my @entries = $j->recentarray;
+    is(scalar(@entries), 30, "recentarray");
 
-my $content = $j->_journalsearch_content; # white box testing
-my @authors;
-while ($content =~ m#/~(\w+)/journal/\d+#g) {
-    push @authors, $1;
+    # check caching
+    my @cache = $j->recentarray;
+    is_deeply(\@cache,\@entries, "cached recentarray");
+
+    # page request
+    my $content = $j->_journalsearch_content;
+    my @authors = ($content =~ m#/~([\w.\+]+)/journal/\d+#g);
+    is(scalar(@authors), 30, "recentarray");
+
+    # removed direct comparison of the @entries and @authors lists as an extra
+    # journal can (and does) slip between the test requests. 
+} else {
+    diag("url=[http://use.perl.org/~$username/]");
+    ok(0); ok(0); ok(0); ok(0);
 }
-@authors = sort @authors;
-
-my @entry_authors = sort map { $_->author } @entries;
-
-#use Data::Dumper;
-#print "\n# entry_authors=".Dumper(\@entry_authors);
-#print "\n# entries=".Dumper(\@entries);
-
-is_deeply(\@entry_authors, \@authors, "...consistency check");
 
 $username = 'nosuchuser';
 my $k = WWW::UsePerl::Journal->new($username);

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION);
-$VERSION = '0.18';
+$VERSION = '0.19';
 
 #----------------------------------------------------------------------------
 
@@ -47,10 +47,18 @@ my $UP_URL = 'http://use.perl.org';
 
 # Regular Expressions for Journal Entries
 
-my $JOURNAL = '
+my $JOURNAL = '(
+            <div \s+ class="search-results">
+            .*?
+            <div \s+ class="author">
+            .*?
+            </div>
+        )';
+
+my $ENTRY = '
             <div \s+ class="search-results">
             \s+
-            <h4> \s+ <a \s+ href=".*?~(\w+)/journal/(\d+)">(.+?)</a> \s+ </h4>
+            <h4> \s+ <a \s+ href=".*?~([\w.\+]+)/journal/(\d+)">(.+?)</a> \s+ </h4>
             \s+
             <div \s+ class="data">
             \s+ On \s+ (.+?) \s+ </div>
@@ -59,18 +67,18 @@ my $JOURNAL = '
             \s+ .*? </div>
             \s+
             <div \s+ class="author">
-            \s+ Author: \s+ <a \s+ href=".*?~(?:\1)/">(?:\1)</a>
+            \s+ Author: \s+ <a \s+ href=".*?~(?:\1)/">[^<]+</a>
         ';
 
 my $ENTRYLIST = '
             <tr> \s+
-            <td \s+ valign="top"><a \s+ href="//use.perl.org/~\w+/journal/(\d+)">
+            <td \s+ valign="top"><a \s+ href="//use.perl.org/~[\w.\+]+/journal/(\d+)">
             <b>(.*?)</b></a></td> \s+
             <td \s+ valign="top"><em>(.*?)</em></td> \s+ </tr>
         ';
 
 my $USER = '
-            <title>Journal \s+ of \s+ (.*?) \s+ \(\d+\) \s* </title>
+            <title>Journal \s+ of \s+ (.*?) \s+ \(\d+\)
         ';
 
 my $UID = '
@@ -137,7 +145,8 @@ sub user {
     $self->{_user} ||= do {
         my $uid = $self->uid;
         my $content = $self->{ua}->request(GET $UP_URL . "/journal.pl?op=list&uid=$uid")->content;
-        return $self->error("Cannot connect to " . $UP_URL)  unless ($content);
+        return $self->error("Cannot connect to " . $UP_URL) unless ($content);
+        return $self->error("Cannot obtain username.")      if($content =~ /<title>Journal \s+ of \s+ \($uid\)/six);
 
 #print STDERR "\n#j->user: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n";
 #print STDERR "\n#content=[$content]\n";
@@ -185,8 +194,10 @@ sub recentarray {
             unless $content;
 
         my @entries;
+        my @content = ($content =~ m!$JOURNAL!igxs);
 
-        while ( $content =~ m!$JOURNAL!igxs ) {
+        for( @content ) {
+            m!$ENTRY!ixs;
             my $time = Time::Piece->strptime($4, '%Y.%m.%d %H:%M');
             #$time += 4*ONE_HOUR; # correct TZ?
 

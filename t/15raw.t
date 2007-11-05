@@ -10,8 +10,10 @@ use WWW::UsePerl::Journal;
         skip 'WUJERR: user not found', 2    unless($j);
 
         my $content = $j->raw('2376');
-        like($content,qr/html/,'... contains html content');
-        like($content,qr/Read\s+only\s+at\s+the\s+moment/,'... contains known text');
+        skip 'WUJERR: no content for russell/2376', 2    unless($content);
+
+        like($content,qr/html/i,'... contains html content');
+        like($content,qr/Read\s+only\s+at\s+the\s+moment/i,'... contains known text');
     }
 }
 
