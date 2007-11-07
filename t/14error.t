@@ -4,7 +4,7 @@ use strict;
 use Test::More tests => 16;
 use WWW::UsePerl::Journal;
 
-# username error
+# bad username error
 my $username = "anonexistentuser";
 my $j = WWW::UsePerl::Journal->new($username);
 isa_ok($j, "WWW::UsePerl::Journal");
@@ -17,7 +17,7 @@ if($err =~ /Cannot connect to|Cannot obtain userid/) {
     like($err, qr/Cannot connect to/, "... error: failed to get uid");
 }
 
-# userid error
+# bad userid error
 $uid = 999999;
 $j = WWW::UsePerl::Journal->new($uid);
 isa_ok($j, "WWW::UsePerl::Journal");
@@ -30,7 +30,7 @@ if($err =~ /Cannot connect to|Cannot obtain username/) {
     like($err, qr/Cannot connect to/, "... error: failed to get user");
 }
 
-# no user error
+# no user details error
 my %entries = $j->entryhash;
 is(scalar(%entries), 0, "no entries");
 like($j->error, qr/Could not retrieve user details/, "... error: failed to get entries");
@@ -41,8 +41,8 @@ is($e, undef, 'no entry title found' );
 like($j->error, qr/Test does not exist/, "... error: failed to find title");
 
 # missing params
-$j = WWW::UsePerl::Journal->new();
-is($j, undef, "missing params to WWW::UsePerl::Journal->new");
+eval { $j = WWW::UsePerl::Journal->new() };
+like($@, qr/No user specified!/, "missing params to WWW::UsePerl::Journal->new");
 
 #----
 

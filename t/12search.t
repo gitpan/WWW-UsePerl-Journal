@@ -22,7 +22,7 @@ if($uid) {
     is_deeply(\@cache,\@entries, "cached recentarray");
 
     # page request
-    my $content = $j->_journalsearch_content;
+    my $content = $j->_recent_content;
     my @authors = ($content =~ m#/~([\w.\+]+)/journal/\d+#g);
     is(scalar(@authors), 30, "recentarray");
 

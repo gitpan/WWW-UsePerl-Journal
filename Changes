@@ -1,6 +1,12 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
-0.19	current
+0.20	07/11/2007
+	- username or userid MUST be provided to new().
+	- added debug() method to turn internal debugging on or off.
+	- internal function _journalsearch_content renamed to _recent_content().
+	- added debug testing script.
+
+0.19	05/11/2007
 	- fixed user names with other characters in aside from \w.
 	- rewrote the the recent list testing, as posts can appear between
 	  extracts.

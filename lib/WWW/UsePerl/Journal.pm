@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION);
-$VERSION = '0.19';
+$VERSION = '0.20';
 
 #----------------------------------------------------------------------------
 
@@ -91,19 +91,20 @@ my $UID = '
 
 =head1 METHODS
 
-=head2 new
+=head2 new( [ $username | $userid ] )
 
   use WWW::UsePerl::Journal;
   my $j1 = WWW::UsePerl::Journal->new('russell');
   my $j2 = WWW::UsePerl::Journal->new(1413);
 
 Creates an instance for the specified user, using either a username or userid.
+Note that you must specify a name or id in order to instantiate the object.
 
 =cut
 
 sub new {
     my $class = shift;
-    my $user  = shift or return;    #die "We need a user!";
+    my $user  = shift or die "No user specified!";
 
     my $ua    = LWP::UserAgent->new(env_proxy => 1);
     $ua->cookie_jar(HTTP::Cookies->new());
@@ -112,6 +113,9 @@ sub new {
         ($user =~ /^\d+$/ ? '_uid' : '_user') => $user,
         ua => $ua,
         }, $class;
+
+    $self->{debug}   = 0;   # debugging off by default
+    $self->{logmess} = '';  # clear message stack
 
     return $self;
 }
@@ -148,8 +152,10 @@ sub user {
         return $self->error("Cannot connect to " . $UP_URL) unless ($content);
         return $self->error("Cannot obtain username.")      if($content =~ /<title>Journal \s+ of \s+ \($uid\)/six);
 
-#print STDERR "\n#j->user: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n";
-#print STDERR "\n#content=[$content]\n";
+        if($self->{debug}) {
+            $self->log('mess' => "\n#j->user: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n");
+            $self->log('mess' => "\n#content=[$content]\n");
+        }
 
         $content =~ m!$USER!six or return $self->error("Cannot obtain username.");
         return $self->error("Cannot obtain username.")  unless($1);
@@ -170,8 +176,10 @@ sub uid {
         my $content = $self->{ua}->request(GET $UP_URL . "/~$user/")->content;
         return $self->error( "Cannot connect to " . $UP_URL )    unless $content;
 
-#print STDERR "\n#j->uid: URL=[". $UP_URL . "/~$user/]\n";
-#print STDERR "\n#content=[$content]\n";
+        if($self->{debug}) {
+            $self->log('mess' => "\n#j->uid: URL=[". $UP_URL . "/~$user/]\n");
+            $self->log('mess' => "\n#content=[$content]\n");
+        }
 
         $content =~ m!$UID!six or return $self->error("Cannot obtain userid.");
         $2;
@@ -189,7 +197,7 @@ sub recentarray {
     my $self = shift;
     $self->{_recentarray} ||= do
     {
-        my $content = $self->_journalsearch_content;
+        my $content = $self->_recent_content;
         return $self->error( "Could not create search list - check your Internet connection" )
             unless $content;
 
@@ -216,10 +224,10 @@ sub recentarray {
     return @{$self->{_recentarray}};
 }
 
-# Internal method: _journalsearch_content
+# Internal method: _journal_content
 # Returns a string containing the interesting bit of the journal search page.
 # Split out from recentarray method to make consistency testing easier.
-sub _journalsearch_content {
+sub _recent_content {
     my $self = shift;
     my $content = $self->{ua}->request( GET $UP_URL . "/search.pl?op=journals")->content;
     return $self->error("Cannot connect to " . $UP_URL . "/search.pl?op=journals")  unless ($content);
@@ -248,8 +256,10 @@ sub entryhash {
 
         my %entries;
 
-#print STDERR "\n#j->entryhash: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n";
-#print STDERR "\n#content=[$content]\n";
+        if($self->{debug}) {
+            $self->log('mess' => "\n#j->entryhash: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n");
+            $self->log('mess' => "\n#content=[$content]\n");
+        }
 
         while ( $content =~ m!$ENTRYLIST!igxs ) {
 
@@ -265,9 +275,9 @@ sub entryhash {
             );
         }
 
-        if(scalar(keys %entries) == 0) {
-            print STDERR "\n#j->entryhash: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n";
-            print STDERR "\n#content=[$content]\n";
+        if($self->{debug} && scalar(keys %entries) == 0) {
+            $self->log('mess' => "\n#j->entryhash: URL=[". $UP_URL . "/journal.pl?op=list&uid=$uid]\n");
+            $self->log('mess' => "\n#content=[$content]\n");
         }
 
         \%entries;
@@ -392,6 +402,60 @@ sub refresh {
                '_entryids_thd','_entryids_asc','_entryids_dsc');
 }
 
+=head2 login
+
+Required before posting can occur, takes the password.
+
+  my $post = $j->login($password);
+
+=cut
+
+sub login {
+    my ($self, $pass) = (@_);
+    my $user  = $self->user;
+    return WWW::UsePerl::Journal::Post->new(
+        j        => $self,
+        username => $user,
+        password => $pass
+    );
+}
+
+=head1 DEBUG METHODS
+
+=head2 debug
+
+Turns internal debugging on or off. Use a true or false expression to set
+value as appropriate. Returns current status.
+
+=cut
+
+sub debug {
+    my $self = shift;
+    if(defined $_[0]) {
+        $self->{debug}   = shift;
+        $self->{logmess} = '';
+    }
+    return $self->{debug};
+}
+
+=head2 log
+
+Used to record internal debugging messages. Call externally with no arguments
+to retrieve the current list of messages.
+
+=cut
+
+sub log {
+    my $self = shift;
+    my %hash = @_;
+
+    $self->{logmess}  = ''          if($hash{clear});
+    $self->{logmess} .= $hash{mess} if($hash{mess});
+    return  if(@_);
+
+    return $self->{logmess};
+}
+
 =head2 raw
 
 For debugging purposes.
@@ -412,23 +476,8 @@ sub raw {
     return $e->raw();
 }
 
-=head2 login
-
-Required before posting can occur, takes the password.
-
-  my $post = $j->login($password);
-
-=cut
-
-sub login {
-    my ($self, $pass) = (@_);
-    my $user  = $self->user;
-    return WWW::UsePerl::Journal::Post->new(
-        j        => $self,
-        username => $user,
-        password => $pass
-    );
-}
+# -------------------------------------
+# The Private Methods
 
 # sort methods
 
