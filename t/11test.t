@@ -15,7 +15,7 @@ my $userid   = 1413;
     my $uid = $j->uid();
 
     SKIP: {
-        skip 'WUJERR:' . $j->error(), 17    unless($uid);
+        skip 'WUJERR: ' . $j->error(), 17    unless($uid);
         is($uid, $userid, 'uid');
 
         my %entries = $j->entryhash;
@@ -71,11 +71,22 @@ my $userid   = 1413;
         is_deeply(\@c_asc,\@asc,'cached ascending entrytitles');
         is_deeply(\@c_des,\@des,'cached descending entrytitles');
 
+        # find another entry
+        $j->debug(1);
         my $text = 'I read in <a href="~hfb/journal/" rel="nofollow">hfb\'s journal</a> that there was no module for testing whether something was a pangram. There is now.';
         my $content = $j->entry('2340')->content;
-        cmp_ok($content, 'eq', $text, 'entry compare' );
-        $content = $j->entrytitled('Lingua::Pangram')->content;
-        cmp_ok($content, 'eq', $text, 'entrytitled compare' );
+
+        unless($content) {
+            diag("url=[http://use.perl.org/~$username/journal/2340]");
+            diag($j->log());
+        }
+
+        SKIP: {
+            skip 'WUJERR: ' . $j->error(), 2    unless($content);
+            cmp_ok($content, 'eq', $text, 'entry compare' );
+            $content = $j->entrytitled('Lingua::Pangram')->content;
+            cmp_ok($content, 'eq', $text, 'entrytitled compare' );
+        }
     }
 }
 

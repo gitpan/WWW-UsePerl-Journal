@@ -1,5 +1,10 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.21	07/11/2007
+	- updated date testing to try and capture problems CPAN testers are
+	  seeing.
+	- updated an entry test in the event no content is returned.
+
 0.20	07/11/2007
 	- username or userid MUST be provided to new().
 	- added debug() method to turn internal debugging on or off.

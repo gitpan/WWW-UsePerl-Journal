@@ -9,42 +9,61 @@ use strict;
 # of the expected date.
 
 
-use Test::More tests => 6;
+use Test::More tests => 9;
 
 use_ok('WWW::UsePerl::Journal');
 
 my $j = WWW::UsePerl::Journal->new(147);
 isa_ok($j, 'WWW::UsePerl::Journal');
 
+$j->debug(1);
 my $e = $j->entry('8028');
 
 SKIP: {
     skip 'WUJERR: ' . $j->error(), 4   unless($e);
-
     isa_ok($e, 'WWW::UsePerl::Journal::Entry');
+    my $d = eval { $e->date(); };
+    is($@, '', 'date() doesnt die on entries posted between noon and 1pm');
 
-    my $s = $e->date->epoch;
-    my $diff = abs($s - 1033030020);
-    if($diff < 12 * 3600) {         # +/- 12 hours for a 24 hour period
-        ok(1, 'Date matches.');
-    } else {
-        is $s => 1033030020, 'Date matches.';
-        diag("url=[http://use.perl.org/147/journal/8028]");
-        diag($j->raw('8028'));
+    diag($j->log())  if($@);
+    $j->log('clear' => 1);
+
+    SKIP: {
+        skip 'WUJERR: Unable to parse date string', 2   unless($d);
+        isa_ok($d, 'Time::Piece');
+
+        my $s = $d->epoch;
+        my $diff = abs($s - 1033030020);
+        if($diff < 12 * 3600) {         # +/- 12 hours for a 24 hour period
+            ok(1, 'Date matches.');
+        } else {
+            is $s => 1033030020, 'Date matches.';
+            diag("url=[http://use.perl.org/147/journal/8028]");
+            diag($j->raw('8028'));
+            diag($j->log());
+            $j->log('clear' => 1);
+        }
     }
 
     $j = WWW::UsePerl::Journal->new(1296);
     $e = $j->entry('3107');
-    my $date = eval { $e->date(); };
+    $d = eval { $e->date(); };
     is($@, '', 'date() doesnt die on entries posted between noon and 1pm');
 
-    $s = $date->epoch;
-    $diff = abs($s - 1014637200);
-    if($diff < 12 * 3600) {         # +/- 12 hours for a 24 hour period
-        ok(1, '...and gives the right date');
-    } else {
-        is $s => 1014637200, '...and gives the right date';
-        diag("url=[http://use.perl.org/1296/journal/3107]");
-        diag($j->raw('3107'));
+    SKIP: {
+        skip 'WUJERR: Unable to parse date string', 2   unless($d);
+        isa_ok($d, 'Time::Piece');
+
+        my $s = $d->epoch;
+        my $diff = abs($s - 1014637200);
+        if($diff < 12 * 3600) {         # +/- 12 hours for a 24 hour period
+            ok(1, '...and gives the right date');
+        } else {
+            is $s => 1014637200, '...and gives the right date';
+            diag("url=[http://use.perl.org/1296/journal/3107]");
+            diag($j->raw('3107'));
+            diag($j->log());
+            $j->log('clear' => 1);
+        }
     }
 }
