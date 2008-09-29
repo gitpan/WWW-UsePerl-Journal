@@ -1,5 +1,11 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.22	29/09/2008
+	- patch by Dave Rolsky to fix the login code, to match recent updates 
+	  to use.perl.org. (RT#38998 - thanks Dave).
+	- updated optional tests.
+	- closed security risk in entrytitled (RT#37177 - thanks Yanick)
+
 0.21	07/11/2007
 	- updated date testing to try and capture problems CPAN testers are
 	  seeing.

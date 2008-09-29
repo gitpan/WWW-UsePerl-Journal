@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION $AUTOLOAD);
-$VERSION = '0.21';
+$VERSION = '0.22';
 
 #----------------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ my $UP_URL = 'http://use.perl.org';
 use overload q{""}  => sub { $_[0]->stringify() };
 
 my $UID = '
-            <div \s+ class="title" \s+ id="user-info-title"> \s+ 
+            <div \s+ class="title" \s+ id="user-info-title"> \s+
             <h4> \s+ (.*?) \s+ \((\d+)\) \s+ </h4> \s+ </div>
         ';
 
@@ -74,7 +74,7 @@ sub new {
     my $class = shift;
     $class    = ref($class) || $class;
     my %opts = (@_);
-    
+
     for(qw/j author eid/) {
     	return	unless(exists $opts{$_});
     }
@@ -119,8 +119,8 @@ sub eid {
 
 The following accessor methods are available:
 
-  date  
-  subject  
+  date
+  subject
   author
   uid
   content
@@ -138,7 +138,7 @@ sub AUTOLOAD {
 	my $name = $AUTOLOAD;
 	$name =~ s/^.*:://;
 	return $self->{j}->error( "Unsupported accessor [$AUTOLOAD]")	unless($autosubs{$name});
-	
+
 	*$name = sub {
 			my $self = shift;
 			$self->_get_content()	unless($self->{$name});
@@ -171,7 +171,7 @@ sub raw {
 # name:	_get_content
 # args:	self .... the current object
 # retv: content text
-# desc: Given a uid and journal entry id, will retrieve a specific journal 
+# desc: Given a uid and journal entry id, will retrieve a specific journal
 #       entry and disassemble into component parts. returns the content text
 
 sub _get_content {
@@ -188,18 +188,18 @@ sub _get_content {
 
     return $self->{j}->error("error getting entry") unless $content;
     return $self->{j}->error("$eid does not exist")
-        if $content =~ 
-        m#Sorry, there are no journal entries 
+        if $content =~
+        m#Sorry, there are no journal entries
         found for this user.</TD></TR></TABLE><P>#is;
     return $self->{j}->error("$eid does not exist")
         if $content =~ m!Sorry, the requested journal entries were not found.!is;
 
     ($author,$self->{uid}) = $content =~ m!$UID!six;
 #print STDERR "\n#e->_get_content: UID=[". ($self->{uid}) ."]";
- 
+
     ($self->{subject}) = $content =~ m!
         <div \s+ id="journalslashdot"> .*?
-        <div \s+ class="title"> \s+ 
+        <div \s+ class="title"> \s+
         <h3> \s* (.*?) \s* </h3>
         !six;
 
@@ -208,7 +208,7 @@ sub _get_content {
         <div \s+ class="journaldate">\w+ \s+ (\w+) \s+ (\d+), \s+ (\d+)</div> .*?
         <div \s+ class="details">(\d+):(\d+) \s+ ([AP]M)</div>
         !six;
-    
+
     unless($month && $day && $year) {
         (undef,$mi,$hr,$day,$month,$year) = localtime(time());
         $month = $mons{$month};
@@ -239,11 +239,11 @@ __END__
 
 =head1 CAVEATS
 
-Beware the stringification of WWW::UsePerl::Journal::Entry objects. 
+Beware the stringification of WWW::UsePerl::Journal::Entry objects.
 They're still objects, they just happen to look the same as before when
 you're printing them. Use -E<gt>content instead.
 
-The time on a journal entry is the localtime of the user that created the 
+The time on a journal entry is the localtime of the user that created the
 journal entry. If you aren't in the same timezone, that time will be wrong.
 
 =head1 SUPPORT
@@ -251,8 +251,8 @@ journal entry. If you aren't in the same timezone, that time will be wrong.
 There are no known bugs at the time of this release. However, if you spot a
 bug or are experiencing difficulties that are not explained within the POD
 documentation, please submit a bug to the RT system (see link below). However,
-it would help greatly if you are able to pinpoint problems or even supply a 
-patch. 
+it would help greatly if you are able to pinpoint problems or even supply a
+patch.
 
 Fixes are dependant upon their severity and my availablity. Should a fix not
 be forthcoming, please feel free to (politely) remind me by sending an email
@@ -267,8 +267,8 @@ F<http://use.perl.org/>
 
 =head1 AUTHOR
 
-  Original author: Russell Matbouli 
-  <www-useperl-journal-spam@russell.matbouli.org>, 
+  Original author: Russell Matbouli
+  <www-useperl-journal-spam@russell.matbouli.org>,
   <http://russell.matbouli.org/>
 
   Current maintainer: Barbie, <barbie@cpan.org>
@@ -279,7 +279,7 @@ F<http://use.perl.org/>
   Copyright (C) 2002-2004 Russell Matbouli.
   Copyright (C) 2005-2007 Barbie for Miss Barbell Productions.
 
-  This module is free software; you can redistribute it and/or 
+  This module is free software; you can redistribute it and/or
   modify it under the same terms as Perl itself.
 
 The full text of the licenses can be found in the F<Artistic> and

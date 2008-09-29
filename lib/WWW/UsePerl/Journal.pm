@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION);
-$VERSION = '0.21';
+$VERSION = '0.22';
 
 #----------------------------------------------------------------------------
 
@@ -82,7 +82,7 @@ my $USER = '
         ';
 
 my $UID = '
-            <div \s+ class="title" \s+ id="user-info-title"> \s+ 
+            <div \s+ class="title" \s+ id="user-info-title"> \s+
             <h4> \s+ (.*?) \s+ \((\d+)\) \s+ </h4> \s+ </div>
         ';
 
@@ -109,7 +109,7 @@ sub new {
     my $ua    = LWP::UserAgent->new(env_proxy => 1);
     $ua->cookie_jar(HTTP::Cookies->new());
 
-    my $self  = bless { 
+    my $self  = bless {
         ($user =~ /^\d+$/ ? '_uid' : '_user') => $user,
         ua => $ua,
         }, $class;
@@ -122,7 +122,7 @@ sub new {
 
 =head2 error
 
-If an error message given, sets the current message and returns undef. If no 
+If an error message given, sets the current message and returns undef. If no
 message given returns that last error message.
 
 =cut
@@ -294,8 +294,8 @@ sub entryhash {
 
 Returns an array of the entry IDs
 
-Can take an optional hash containing; {descending=>1} to return a descending 
-list of journal IDs, {ascending=>1} to return an ascending list or 
+Can take an optional hash containing; {descending=>1} to return a descending
+list of journal IDs, {ascending=>1} to return an ascending list or
 {threaded=>1} to return a thread ordered list. The latter being the default.
 
 =cut
@@ -321,8 +321,8 @@ sub entryids {
 
 Returns an array of the entry titles
 
-Can take an optional hash containing; {descending=>1} to return a descending 
-list of comment IDs, {ascending=>1} to return an ascending list or 
+Can take an optional hash containing; {descending=>1} to return a descending
+list of comment IDs, {ascending=>1} to return an ascending list or
 {threaded=>1} to return a thread ordered list. The latter being the default.
 
 =cut
@@ -372,6 +372,11 @@ the underlying object methods:
   my $title   = $e->title;
   my $content = $e->content;
 
+Note that prior to v0.21 this used a regular expression to match the user data
+against the title. Due to this being a potential security risk, as of v0.22 the
+title passed to this method is now required to be a string that will match all
+or part of the journal title you require.
+
 =cut
 
 sub entrytitled {
@@ -380,7 +385,7 @@ sub entrytitled {
     my %entries = $self->entryhash;
 
     for(keys %entries) {
-        next unless $entries{$_}->subject =~ /$title/ism;
+        next    if(index($entries{$_}->subject,$title) == -1);
         return $self->entry($_);
     }
     return $self->error("$title does not exist");
@@ -388,7 +393,7 @@ sub entrytitled {
 
 =head2 refresh
 
-To save time, entries are cached. However, following a post or 
+To save time, entries are cached. However, following a post or
 period of waiting, you may want to refresh the list. This functions
 allows you to clear the cache and start again.
 
@@ -396,7 +401,7 @@ allows you to clear the cache and start again.
 
 sub refresh {
     my $self    = shift;
-    $self->{$_} = () 
+    $self->{$_} = ()
         for(   '_recentarray','_entryhash',
                '_titles_thd','_titles_asc','_titles_dsc',
                '_entryids_thd','_entryids_asc','_entryids_dsc');
@@ -501,11 +506,11 @@ __END__
 
 =head1 CAVEATS
 
-Beware the stringification of WWW::UsePerl::Journal::Entry objects. 
+Beware the stringification of WWW::UsePerl::Journal::Entry objects.
 They're still objects, they just happen to look the same as before when
 you're printing them. Use -E<gt>content instead.
 
-The time on a journal entry is the localtime of the user that created the 
+The time on a journal entry is the localtime of the user that created the
 journal entry. If you aren't in the same timezone, that time can appear an
 hour out.
 
@@ -519,8 +524,8 @@ F<LWP>
 There are no known bugs at the time of this release. However, if you spot a
 bug or are experiencing difficulties that are not explained within the POD
 documentation, please submit a bug to the RT system (see link below). However,
-it would help greatly if you are able to pinpoint problems or even supply a 
-patch. 
+it would help greatly if you are able to pinpoint problems or even supply a
+patch.
 
 Fixes are dependant upon their severity and my availablity. Should a fix not
 be forthcoming, please feel free to (politely) remind me by sending an email
@@ -530,8 +535,8 @@ RT: L<http://rt.cpan.org/Public/Dist/Display.html?Name=WWW-UsePerl-Journal>
 
 =head1 AUTHOR
 
-  Original author: Russell Matbouli 
-  <www-useperl-journal-spam@russell.matbouli.org>, 
+  Original author: Russell Matbouli
+  <www-useperl-journal-spam@russell.matbouli.org>,
   <http://russell.matbouli.org/>
 
   Current maintainer: Barbie, <barbie@cpan.org>
@@ -548,7 +553,7 @@ scripts.
   Copyright (C) 2002-2004 Russell Matbouli.
   Copyright (C) 2005-2007 Barbie for Miss Barbell Productions.
 
-  This module is free software; you can redistribute it and/or 
+  This module is free software; you can redistribute it and/or
   modify it under the same terms as Perl itself.
 
 The full text of the licenses can be found in the F<Artistic> and
