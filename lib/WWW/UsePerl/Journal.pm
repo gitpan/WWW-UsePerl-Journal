@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION);
-$VERSION = '0.22';
+$VERSION = '0.23';
 
 #----------------------------------------------------------------------------
 
@@ -249,7 +249,7 @@ sub entryhash {
     $self->{_entryhash} ||= do {
         my $uid  = $self->uid  || '';
         my $user = $self->user || '';
-        return $self->error("Could not retrieve user details ($uid,$user)") unless $uid && $user;
+        return $self->error("Could not retrieve user details (uid=$uid,user=$user)") unless $uid && $user;
 
         my $content = $self->{ua}->request(GET $UP_URL . "/journal.pl?op=list&uid=$uid")->content;
         return $self->error("Could not create entry list") unless $content;
@@ -322,7 +322,7 @@ sub entryids {
 Returns an array of the entry titles
 
 Can take an optional hash containing; {descending=>1} to return a descending
-list of comment IDs, {ascending=>1} to return an ascending list or
+list of journal titles, {ascending=>1} to return an ascending list or
 {threaded=>1} to return a thread ordered list. The latter being the default.
 
 =cut
@@ -551,7 +551,7 @@ scripts.
 =head1 COPYRIGHT AND LICENSE
 
   Copyright (C) 2002-2004 Russell Matbouli.
-  Copyright (C) 2005-2007 Barbie for Miss Barbell Productions.
+  Copyright (C) 2005-2009 Barbie for Miss Barbell Productions.
 
   This module is free software; you can redistribute it and/or
   modify it under the same terms as Perl itself.

@@ -20,7 +20,7 @@ $j->debug(1);
 my $e = $j->entry('8028');
 
 SKIP: {
-    skip 'WUJERR: ' . $j->error(), 4   unless($e);
+    skip 'WUJERR: ' . $j->error(), 7   unless($e);
     isa_ok($e, 'WWW::UsePerl::Journal::Entry');
     my $d = eval { $e->date(); };
     is($@, '', 'date() doesnt die on entries posted between noon and 1pm');

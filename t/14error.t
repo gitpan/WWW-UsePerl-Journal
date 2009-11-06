@@ -1,6 +1,9 @@
 #!/usr/bin/perl -w
 use strict;
 
+use lib 't/lib';
+use PingTest;
+
 use Test::More tests => 16;
 use WWW::UsePerl::Journal;
 
@@ -47,12 +50,19 @@ like($@, qr/No user specified!/, "missing params to WWW::UsePerl::Journal->new")
 #----
 
 $username = "russell";
-my $entryid  = 9999;
+my $entryid  = 999999;
 
 $j = WWW::UsePerl::Journal->new($username);
 $e = WWW::UsePerl::Journal::Entry->new(j=>$j,author=>$username,eid=>$entryid);
 isa_ok($e,'WWW::UsePerl::Journal::Entry');
 is($e->badsub, undef, 'nonexistent accessor');
 like($j->error, qr/Unsupported accessor/, "... error: nonexistent accessor");
-is($e->_get_content, undef, 'missing entry');
-like($j->error, qr/(does not exist|error getting entry)/, "... error: missing entry");
+
+my $pingtest = PingTest::pingtest('use.perl.org');
+
+SKIP: {
+	skip "Can't see a network connection", 2	if($pingtest);
+
+    is($e->_get_content, undef, 'missing entry');
+    like($j->error, qr/(does not exist|error getting entry)/, "... error: missing entry");
+}

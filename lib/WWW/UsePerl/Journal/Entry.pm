@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION $AUTOLOAD);
-$VERSION = '0.22';
+$VERSION = '0.23';
 
 #----------------------------------------------------------------------------
 
@@ -223,10 +223,13 @@ sub _get_content {
         $mi ||= 0;
     }
 
-    $self->{date} = Time::Piece->strptime(
-        "$month $day $year ${hr}:$mi",
-        '%B %d %Y %H:%M'
-    );
+    # sometimes Time::Piece can't parse the date :(
+    eval {
+        $self->{date} = Time::Piece->strptime(
+            "$month $day $year ${hr}:$mi",
+            '%B %d %Y %H:%M'
+        );
+    };
 
     #$self->{date} += 4*ONE_HOUR; # correct TZ?
 
@@ -277,7 +280,7 @@ F<http://use.perl.org/>
 =head1 COPYRIGHT AND LICENSE
 
   Copyright (C) 2002-2004 Russell Matbouli.
-  Copyright (C) 2005-2007 Barbie for Miss Barbell Productions.
+  Copyright (C) 2005-2009 Barbie for Miss Barbell Productions.
 
   This module is free software; you can redistribute it and/or
   modify it under the same terms as Perl itself.

@@ -24,3 +24,5 @@ t/24post.t
 t/90podtest.t
 t/91podcover.t
 t/94metatest.t
+t/95changedate.t
+t/lib/PingTest.pm

@@ -1,5 +1,9 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.23	06/11/2009
+	- added PingTest to test suite in order to check whether a network 
+	  connection is available.
+
 0.22	29/09/2008
 	- patch by Dave Rolsky to fix the login code, to match recent updates 
 	  to use.perl.org. (RT#38998 - thanks Dave).

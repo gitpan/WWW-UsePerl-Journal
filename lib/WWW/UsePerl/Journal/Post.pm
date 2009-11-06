@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION);
-$VERSION = '0.22';
+$VERSION = '0.23';
 
 #----------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@ undelying object as follows:
 
   use WWW::UsePerl::Journal;
   my $j = WWW::UsePerl::Journal->new($user);
-  my $p = $j->login($pass);
+  my $post = $j->login($pass);
 
 However, you can access the object directly as follows:
 
@@ -53,7 +53,6 @@ However, you can access the object directly as follows:
   # delete an entry you don't want
   # WARNING: this is permanent!
   $success = $post->deleteentry($eid);
-  if(!$success) { $
 
 =cut
 
@@ -275,7 +274,7 @@ F<http://use.perl.org/>
 
 =head1 COPYRIGHT AND LICENSE
 
-  Copyright (C) 2003-2007 Barbie for Miss Barbell Productions.
+  Copyright (C) 2003-2009 Barbie for Miss Barbell Productions.
 
   This module is free software; you can redistribute it and/or
   modify it under the same terms as Perl itself.
