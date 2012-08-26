@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 10;
+use Test::More tests => 8;
 use WWW::UsePerl::Journal;
 
 my $username = "barbie";
@@ -21,11 +21,5 @@ is($mess,'Test','... short debug message');
 $j->log('clear' => 1);
 $mess = $j->log();
 is(length($mess),0,'... debug messages cleared');
-
-$j->uid();
-
-$mess = $j->log();
-is($j->debug(),1,'... debug on');
-like($mess,qr/URL=/,'... valid debug messages');
 
 is($j->debug(0),0,'.. debug off');

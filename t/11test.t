@@ -4,13 +4,14 @@ use strict;
 use lib 't/lib';
 use PingTest;
 
-use Test::More tests => 21;
+use Test::Exception;
+use Test::More tests => 23;
 use WWW::UsePerl::Journal;
 
 my $pingtest = PingTest::pingtest('use.perl.org');
 
 SKIP: {
-	skip "Can't see a network connection", 21	if($pingtest);
+	skip "Can't see a network connection", 20	if($pingtest);
 
     my $username = "russell";
     my $entryid  = 2376;
@@ -23,24 +24,27 @@ SKIP: {
         my $uid = $j->uid();
 
         SKIP: {
-            skip 'WUJERR: ' . $j->error(), 17    unless($uid);
+            skip 'WUJERR: ' . $j->error(), 14    unless($uid);
             is($uid, $userid, 'uid');
 
             my %entries = $j->entryhash;
             isnt(scalar(keys %entries), 0, 'entryhash');
             if(scalar(keys %entries) == 0) {
-                diag("url=[http://use.perl.org/~$username/]");
+                diag("1.url=[http://use.perl.org/_$username/]");
                 diag("WUJERR: " . $j->error);
             }
             my %cache = $j->entryhash;
             is(scalar(keys %cache),scalar(keys %entries), 'matching cached/entryhash count');
-            is_deeply(\%cache,\%entries, 'matching cached/entryhash values');
+            #is_deeply(\%cache,\%entries, 'matching cached/entryhash values');
+
+            #use Data::Dumper;
+            #diag(Dumper(\%cache));
 
             # check entry ids
             my @ids = $j->entryids;
             isnt(scalar(@ids), 0, 'entryids');
             if(scalar(@ids) == 0) {
-                diag("url=[http://use.perl.org/~$username/]");
+                diag("2.url=[http://use.perl.org/_$username/]");
                 diag("WUJERR: " . $j->error);
             }
 
@@ -59,11 +63,16 @@ SKIP: {
             is_deeply(\@c_asc,\@asc,'cached ascending entryids');
             is_deeply(\@c_des,\@des,'cached descending entryids');
 
+            #my %c = $j->entryhash;
+            #use Data::Dumper;
+            #diag(Dumper(\%c));
+
+
             # check entry titles
             my @titles = $j->entrytitles;
             isnt(scalar @titles, 0, 'entrytitles');
             if(scalar(@titles) == 0) {
-                diag("url=[http://use.perl.org/~$username/]");
+                diag("3.url=[http://use.perl.org/_$username/]");
                 diag("WUJERR: " . $j->error);
             }
             @asc = $j->entrytitles(ascending  => 1);
@@ -81,16 +90,16 @@ SKIP: {
 
             # find another entry
             $j->debug(1);
-            my $text = 'I read in <a href="~hfb/journal/" rel="nofollow">hfb\'s journal</a> that there was no module for testing whether something was a pangram. There is now.';
+            my $text = 'I read in <a href="_hfb/journal/index.html" rel="nofollow">hfb\'s journal</a> that there was no module for testing whether something was a pangram. There is now.';
             my $content = $j->entry('2340')->content;
 
             unless($content) {
-                diag("url=[http://use.perl.org/~$username/journal/2340]");
+                diag("4.url=[http://use.perl.org/_$username/journal/2340.html]");
                 diag($j->log());
             }
 
             SKIP: {
-                skip 'WUJERR: ' . $j->error(), 2    unless($content);
+                skip 'WUJERR: ' . ($j->error()||'<none>'), 2    unless($content);
                 cmp_ok($content, 'eq', $text, 'entry compare' );
                 $content = $j->entrytitled('Lingua::Pangram')->content;
                 cmp_ok($content, 'eq', $text, 'entrytitled compare' );
@@ -103,7 +112,7 @@ SKIP: {
         my $user = $j->user;
         is($user, 'richardc', 'username from uid');
         if($user ne 'richardc') {
-            diag("url=[http://use.perl.org//journal.pl?op=list&uid=1662]");
+            diag("5.url=[http://use.perl.org//journal.pl?op=list&uid=1662]");
             diag("WUJERR: " . $j->error);
         }
     }
@@ -114,9 +123,18 @@ SKIP: {
         is($@, '', 'entryhash doesnt die on titles with trailing newlines');
         isnt(scalar(keys %entries), 0, '...and has found some entries');
         if(scalar(keys %entries) == 0) {
-            diag("url=[http://use.perl.org/~2shortplanks/]");
+            diag("6.url=[http://use.perl.org/_2shortplanks/]");
             diag("WUJERR: " . $j->error);
         }
     }
 }
 
+# catch some errors
+{
+    my $j;
+    dies_ok { $j = WWW::UsePerl::Journal->new(); } 'dies if no username given';
+
+    my $entry = WWW::UsePerl::Journal::Entry->new();
+    is($entry,undef,'missing parameters');
+    dies_ok { my $entry = WWW::UsePerl::Journal::Entry->new( j => 'journal', eid => 1, author => 'me' ) } 'dies with invalid required parameters are missing';
+}

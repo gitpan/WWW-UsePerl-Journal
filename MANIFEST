@@ -1,8 +1,7 @@
-Artistic
-COPYING
 Changes
 LICENSE
 MANIFEST
+META.json
 META.yml
 Makefile.PL
 README
@@ -11,7 +10,6 @@ examples/journalstat.pl
 examples/examples.txt
 lib/WWW/UsePerl/Journal.pm
 lib/WWW/UsePerl/Journal/Entry.pm
-lib/WWW/UsePerl/Journal/Post.pm
 t/01base.t
 t/11test.t
 t/12search.t
@@ -20,9 +18,9 @@ t/14error.t
 t/15raw.t
 t/16debug.t
 t/23entry.t
-t/24post.t
 t/90podtest.t
 t/91podcover.t
 t/94metatest.t
 t/95changedate.t
+t/96metatest.t
 t/lib/PingTest.pm

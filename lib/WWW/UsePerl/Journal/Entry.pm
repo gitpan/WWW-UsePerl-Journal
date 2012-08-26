@@ -3,8 +3,8 @@ package WWW::UsePerl::Journal::Entry;
 use strict;
 use warnings;
 
-use vars qw($VERSION $AUTOLOAD);
-$VERSION = '0.23';
+use vars qw($VERSION);
+$VERSION = '0.24';
 
 #----------------------------------------------------------------------------
 
@@ -21,18 +21,41 @@ Do not use directly. See L<WWW::UsePerl::Journal> for details of usage.
 # -------------------------------------
 # Library Modules
 
-use LWP::UserAgent;
+use base qw(Class::Accessor::Fast);
+
+use Carp;
 use HTTP::Cookies;
 use HTTP::Request::Common;
-use Carp;
+use LWP::UserAgent;
 use Time::Piece;
 use Time::Seconds;
+
 use WWW::UsePerl::Journal;
+
+#----------------------------------------------------------------------------
+# Accessors
+
+=head2 The Accessors
+
+The following accessor methods are available:
+
+  date
+  subject
+  author
+  uid
+  content
+
+All functions can be called to return the current value of the associated
+object variable.
+
+=cut
+
+__PACKAGE__->mk_accessors($_) for qw(date subject author eid);
 
 # -------------------------------------
 # Constants & Variables
 
-my $UP_URL = 'http://use.perl.org';
+my $UP_URL = 'http://use.perl.org/use.perl.org';
 use overload q{""}  => sub { $_[0]->stringify() };
 
 my $UID = '
@@ -58,9 +81,13 @@ my %mons = (
 # -------------------------------------
 # The Public Interface
 
-=head1 METHODS
+=head1 INTERFACE
 
-=head2 new
+=head2 Constructor
+
+=over 4
+
+=item * new
 
   use WWW::UsePerl::Journal::Entry;
   my $j = WWW::UsePerl::Journal::Entry->new(%hash);
@@ -68,16 +95,20 @@ my %mons = (
 Creates an instance for a specific entry. The hash must contain values for
 the keys 'j' (journal object), 'author' (entry author) and 'eid' (entry id).
 
+=back
+
 =cut
 
 sub new {
     my $class = shift;
-    $class    = ref($class) || $class;
     my %opts = (@_);
 
     for(qw/j author eid/) {
-    	return	unless(exists $opts{$_});
+    	return	unless($opts{$_});
     }
+
+    die "No parent object"
+	    unless $opts{j}->isa('WWW::UsePerl::Journal');
 
 #use Data::Dumper;
 #print STDERR "\n#self->new: ".Dumper(\%opts);
@@ -88,7 +119,11 @@ sub new {
 
 sub DESTROY {}
 
-=head2 stringify
+=head2 Methods
+
+=over 4
+
+=item * stringify
 
   use WWW::UsePerl::Journal::Entry;
   my $j = WWW::UsePerl::Journal::Entry->new(%hash);
@@ -104,7 +139,7 @@ sub stringify {
     $self->content();
 }
 
-=head2 eid
+=item * eid
 
 Returns the entry id for the current journal entry.
 
@@ -115,44 +150,22 @@ sub eid {
     return $self->{eid};
 }
 
-=head2 The Accessors
+=item * content
 
-The following accessor methods are available:
-
-  date
-  subject
-  author
-  uid
-  content
-
-All functions can be called to return the current value of the associated
-object variable.
+Return the content of an journal entry.
 
 =cut
 
-my %autosubs = map {$_ => 1} qw( date subject author uid content );
-
-sub AUTOLOAD {
-    my $self = $_[0];
-	no strict 'refs';
-	my $name = $AUTOLOAD;
-	$name =~ s/^.*:://;
-	return $self->{j}->error( "Unsupported accessor [$AUTOLOAD]")	unless($autosubs{$name});
-
-	*$name = sub {
-			my $self = shift;
-			$self->_get_content()	unless($self->{$name});
-			return unless($self->{$name});
-			$self->{$name} =~ s/^\s+//;					# remove leading whitespace
-			$self->{$name} =~ s/\s+$//;					# remove trailing whitespace
-			return $self->{$name};
-	};
-	goto &$name;
+sub content {
+    my $self   = shift;
+    $self->{content} ||= do { $self->_get_content };
 }
 
-=head2 raw
+=item * raw
 
 For debugging purposes.
+
+=back
 
 =cut
 
@@ -160,10 +173,9 @@ sub raw {
     my $self   = shift;
     my $eid    = $self->{eid};
     my $author = $self->{author};
-#print STDERR "\n#raw: URL=[". $UP_URL . "/~$author/journal/$eid]";
-    return $self->{j}->{ua}->request(GET $UP_URL . "/~$author/journal/$eid")->content;
+#print STDERR "\n#raw: URL=[". $UP_URL . "/_$author/journal/$eid.html]";
+    return $self->{j}->{ua}->request(GET $UP_URL . "/_$author/journal/$eid.html")->content;
 }
-
 
 # -------------------------------------
 # The Private Subs
@@ -178,15 +190,22 @@ sub _get_content {
     my $self   = shift;
     my $eid    = $self->{eid};
     my $author = $self->{author};
+    my $content;
 
-    return $self->{j}->error("author missing")  unless($author);
+    eval {
+        $content = $self->{j}->{ua}->request(GET $UP_URL . "/_$author/journal/$eid.html")->content;
+    };
 
-    my $content = $self->{j}->{ua}->request(GET $UP_URL . "/~$author/journal/$eid")->content;
+#print STDERR "\n#eval=[$@]\n";
 
-#print STDERR "\n#e->_get_content: URL=[". $UP_URL . "/~$author/journal/$eid]";
+    return $self->{j}->error("error getting entry") if($@);
+
+#print STDERR "\n#e->_get_content: URL=[". $UP_URL . "/_$author/journal/$eid.html]";
 #print STDERR "\n#content=[$content]\n";
 
     return $self->{j}->error("error getting entry") unless $content;
+    return $self->{j}->error("error getting entry") if($content =~ m!<b>Error type:</b>\s+\d+!);
+
     return $self->{j}->error("$eid does not exist")
         if $content =~
         m#Sorry, there are no journal entries
@@ -209,18 +228,15 @@ sub _get_content {
         <div \s+ class="details">(\d+):(\d+) \s+ ([AP]M)</div>
         !six;
 
-    unless($month && $day && $year) {
+    unless($day) {
         (undef,$mi,$hr,$day,$month,$year) = localtime(time());
         $month = $mons{$month};
     }
 
     # just in case we can't get the time
-    if($hr && $mi && $amp) {
-        $hr += 12 if($amp eq 'PM');
-        $hr = 0   if($hr == 24);
-    } else {
-        $hr ||= 0;
-        $mi ||= 0;
+    if($amp) {
+        $hr += 12 if($hr >  12 && $amp eq 'PM');
+        $hr = 0   if($hr == 12 && $amp eq 'AM');
     }
 
     # sometimes Time::Piece can't parse the date :(
@@ -234,10 +250,11 @@ sub _get_content {
     #$self->{date} += 4*ONE_HOUR; # correct TZ?
 
     $content =~ m! <div \s+ class="intro">\s*(.*?)\s*</div> !six;
-    $self->{content} = $1;
+    return $1;
 }
 
 1;
+
 __END__
 
 =head1 CAVEATS
@@ -257,7 +274,7 @@ documentation, please submit a bug to the RT system (see link below). However,
 it would help greatly if you are able to pinpoint problems or even supply a
 patch.
 
-Fixes are dependant upon their severity and my availablity. Should a fix not
+Fixes are dependent upon their severity and my availability. Should a fix not
 be forthcoming, please feel free to (politely) remind me by sending an email
 to barbie@cpan.org .
 
@@ -265,8 +282,9 @@ RT: L<http://rt.cpan.org/Public/Dist/Display.html?Name=WWW-UsePerl-Journal>
 
 =head1 SEE ALSO
 
-L<WWW::UsePerl::Journal>,
-F<http://use.perl.org/>
+F<http://use.perl.org/use.perl.org>
+
+L<WWW::UsePerl::Journal::Server>
 
 =head1 AUTHOR
 
@@ -280,14 +298,9 @@ F<http://use.perl.org/>
 =head1 COPYRIGHT AND LICENSE
 
   Copyright (C) 2002-2004 Russell Matbouli.
-  Copyright (C) 2005-2009 Barbie for Miss Barbell Productions.
+  Copyright (C) 2005-2012 Barbie for Miss Barbell Productions.
 
-  This module is free software; you can redistribute it and/or
-  modify it under the same terms as Perl itself.
-
-The full text of the licenses can be found in the F<Artistic> and
-F<COPYING> files included with this module, or in L<perlartistic> and
-L<perlgpl> in Perl 5.8.1 or later.
+This module is free software; you can redistribute it and/or
+modify it under the Artistic Licence v2.
 
 =cut
-

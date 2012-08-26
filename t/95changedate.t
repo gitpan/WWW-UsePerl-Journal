@@ -1,6 +1,8 @@
+#!/usr/bin/perl -w
+use strict;
+
 use Test::More;
 use IO::File;
-use WWW::UsePerl::Journal;
 
 # Skip if doing a regular install
 plan skip_all => "Author tests not required for installation"
@@ -8,16 +10,29 @@ plan skip_all => "Author tests not required for installation"
 
 my $fh = IO::File->new('Changes','r')   or plan skip_all => "Cannot open Changes file";
 
-plan no_plan;
+plan 'no_plan';
+
+use WWW::UsePerl::Journal;
+my $version = $WWW::UsePerl::Journal::VERSION;
 
 my $latest = 0;
 while(<$fh>) {
     next        unless(m!^\d!);
-    $latest = 1 if(m!^$WWW::UsePerl::Journal::VERSION!);
-    like($_, qr!(   
-                    \d[\d._]+\s+\d{2}/\d{2}/\d{4}                           | # 05/03/2007
-                    \w+\s+\w+\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+\w+\s+\d{4}   | # Fri Jan 24 15:11:53 GMT 2003
-                    (\w+\s+)?\w+\s+\d{1,2}                                  ) # Tue Apr 05 2005   OR   Apr 05 2005
+    $latest = 1 if(m!^$version!);
+
+    # 2012-08-26T01:02 or 2012-08-26T01:02:03 or 2012-08-26T01:02:03.04 or 2012-08-26T01:02+01:00
+
+    like($_, qr!    \d[\d._]+\s+                # version
+                    (   \d{4}-\d{2}-\d{2}       # 2012-08-26    - YYYY-MM-DD
+                        (   T\d{2}:\d{2}        # T01:02        - Thh:mm
+                            (   :\d{2}          # :02           - :ss
+                                (   \.\d+       # .2            - .ss (microseconds)
+                                )?
+                            )?
+                            (   (Z|[-+]\d+:\d+) # +01:00        - timezone
+                            )?
+                        )?
+                    ) 
                 !x,'... version has a date');
 }
 
