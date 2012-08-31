@@ -1,9 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
 
-use lib 't/lib';
-use PingTest;
-
 use Test::More tests => 15;
 use WWW::UsePerl::Journal;
 
@@ -54,10 +51,8 @@ $j = WWW::UsePerl::Journal->new($username);
 $e = WWW::UsePerl::Journal::Entry->new(j=>$j,author=>$username,eid=>$entryid);
 isa_ok($e,'WWW::UsePerl::Journal::Entry');
 
-my $pingtest = PingTest::pingtest('use.perl.org');
-
 SKIP: {
-	skip "Can't see a network connection", 2	if($pingtest);
+	skip "Can't see a network connection", 2	unless($j->connected);
 
     is($e->_get_content, undef, 'missing entry');
     like($j->error, qr/(does not exist|error getting entry)/, "... error: missing entry");

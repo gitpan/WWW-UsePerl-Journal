@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION);
-$VERSION = '0.24';
+$VERSION = '0.25';
 
 #----------------------------------------------------------------------------
 
@@ -37,7 +37,6 @@ database to retrieve journal entries.
 # -------------------------------------
 # Library Modules
 
-use Carp;
 use HTTP::Cookies;
 use HTTP::Request::Common;
 use LWP::UserAgent;
@@ -153,6 +152,29 @@ sub error {
     }
 
     $self->{error};
+}
+
+=item * connected
+
+Check whether use.perl is available.
+
+=cut
+
+sub connected {
+    my $self = shift;
+    my ($request,$content);
+
+    eval {
+        $request = $self->{ua}->request(GET $UP_URL);
+        $content = $request->content;
+    };
+
+    #print STDERR "\n# [$@], request=$request, content=$content\n";
+
+    return 0    if($@);
+    return 0    unless($request && $content);
+    return 0    if($content =~ /500 Can't connect/);
+    return 1;
 }
 
 =item * user

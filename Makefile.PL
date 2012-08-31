@@ -15,7 +15,6 @@ WriteMakefile(
     PREREQ_PM           => {
 
         # runtime prereqs
-        'Carp'                      => 0,
         'Class::Accessor::Fast'     => 0,
         'HTTP::Cookies'             => 0,
         'HTTP::Request::Common'     => 0,

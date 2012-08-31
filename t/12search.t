@@ -1,20 +1,17 @@
 #!/usr/bin/perl -w
 use strict;
 
-use lib 't/lib';
-use PingTest;
-
 use Data::Dumper;
 use Test::More tests => 5;
 use WWW::UsePerl::Journal;
 
-my $pingtest = PingTest::pingtest('use.perl.org');
+my $j = WWW::UsePerl::Journal->new('testuser');
 
 SKIP: {
-	skip "Can't see a network connection", 5	if($pingtest);
+	skip "Can't see a network connection", 5	unless($j->connected);
 
     my $username = 'koschei';
-    my $j = WWW::UsePerl::Journal->new($username);
+    $j = WWW::UsePerl::Journal->new($username);
     isa_ok($j, "WWW::UsePerl::Journal");
 
     my $uid = $j->uid();

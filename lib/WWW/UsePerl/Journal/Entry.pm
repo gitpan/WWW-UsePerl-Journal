@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use vars qw($VERSION);
-$VERSION = '0.24';
+$VERSION = '0.25';
 
 #----------------------------------------------------------------------------
 
@@ -23,7 +23,6 @@ Do not use directly. See L<WWW::UsePerl::Journal> for details of usage.
 
 use base qw(Class::Accessor::Fast);
 
-use Carp;
 use HTTP::Cookies;
 use HTTP::Request::Common;
 use LWP::UserAgent;

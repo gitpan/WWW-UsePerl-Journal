@@ -1,6 +1,6 @@
 {
     "name" : "WWW-UsePerl-Journal",
-    "version" : "0.24",
+    "version" : "0.25",
     "abstract" : "Handles the retrieval of UsePerl journal entries",
     "author" : [
         "Barbie <barbie@cpan.org>"
@@ -43,7 +43,6 @@
         "runtime" : {
             "requires" : {
                 "perl": "5.006",
-                "Carp": "0",
                 "Class::Accessor::Fast": "0",
                 "HTTP::Cookies": "0",
                 "HTTP::Request::Common": "0",
@@ -56,11 +55,11 @@
     "provides" : {
         "WWW::UsePerl::Journal" : {
             "file" : "lib/WWW/UsePerl/Journal.pm",
-            "version" : "0.24"
+            "version" : "0.25"
         },
         "WWW::UsePerl::Journal::Entry" : {
             "file" : "lib/WWW/UsePerl/Journal/Entry.pm",
-            "version" : "0.24"
+            "version" : "0.25"
         }
     }
 }

@@ -1,5 +1,10 @@
 Revision history for Perl extension WWW:UsePerl::Journal.
 
+0.25	2012-08-31
+	- created connected() method.
+	- removed PingTest.pm test library.
+	- removed Carp as a prerequisite.
+
 0.24	2012-08-26
 	- use.perl.org is now read only. 
 	- removed Post.pm features & tests

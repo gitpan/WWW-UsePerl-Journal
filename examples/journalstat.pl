@@ -10,8 +10,7 @@ use WWW::UsePerl::Journal;
 print "Supply usernames to look up on the command line\n"
     if (~~@ARGV == 0);
 
-foreach my $user (@ARGV)
-{
+for my $user (@ARGV) {
     my $journal = WWW::UsePerl::Journal->new($user);
     my @entries = $journal->entryids();
 
